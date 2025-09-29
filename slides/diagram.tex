@@ -23,12 +23,35 @@
 \colorlet{llmArrow}{AMU_acc1}
 \colorlet{llmCoreTitle}{AMU_dk2}
 
+\colorlet{llmEmbedDroneA}{AMU_dk2!10}
+\colorlet{llmEmbedDroneB}{AMU_dk2!30}
+\colorlet{llmEmbedDroneC}{AMU_dk2!50}
+\colorlet{llmEmbedDroneD}{AMU_dk2!70}
+\colorlet{llmEmbedDroneE}{AMU_dk2!90}
+\colorlet{llmEmbedSmartA}{AMU_acc6!10}
+\colorlet{llmEmbedSmartB}{AMU_acc6!30}
+\colorlet{llmEmbedSmartC}{AMU_acc6!50}
+\colorlet{llmEmbedSmartD}{AMU_acc6!70}
+\colorlet{llmEmbedSmartE}{AMU_acc6!90}
+
+
+
 \colorlet{tokenSentenceBg}{AMU_dk2!12!AMU_lt1}
 \colorlet{tokenSentenceBorder}{AMU_dk1!80!AMU_dk2}
 \colorlet{tokenWordBgA}{AMU_acc5!70!AMU_lt1}
 \colorlet{tokenWordBgB}{AMU_lt2!80!AMU_lt1}
 \colorlet{tokenVocabBg}{AMU_lt2!60!AMU_lt1}
 \colorlet{tokenConnector}{AMU_dk1!70!AMU_lt1}
+
+\colorlet{neighborWordBg}{AMU_lt1}
+\colorlet{neighborRedA}{AMU_acc3!30!AMU_lt1}
+\colorlet{neighborRedB}{AMU_acc3!55!AMU_lt1}
+\colorlet{neighborRedC}{AMU_acc3!75!AMU_lt1}
+\colorlet{neighborRedD}{AMU_acc3!90!AMU_lt1}
+\colorlet{neighborBlueA}{AMU_acc6!30!AMU_lt1}
+\colorlet{neighborBlueB}{AMU_acc6!55!AMU_lt1}
+\colorlet{neighborBlueC}{AMU_acc6!75!AMU_lt1}
+\colorlet{neighborBlueD}{AMU_acc6!90!AMU_lt1}
 
 \tikzset{llm/box/.style={draw=black, rounded corners=6pt, inner sep=10pt, align=center}}
 \tikzset{llm/input/.style={llm/box, fill=llmInputBg, minimum width=6.8cm, minimum height=2.0cm}}
@@ -49,6 +72,14 @@
 \tikzset{token/vocabLabel/.style={font=\small\bfseries, text=AMU_dk1}}
 \tikzset{token/span/.style={<->, line width=1pt, draw=tokenConnector, densely dashed}}
 
+\tikzset{neighbor/colLabel/.style={font=\small\bfseries, text=AMU_dk1}}
+\tikzset{neighbor/word/.style={draw=AMU_dk1, rounded corners=6pt, fill=neighborWordBg, inner xsep=10pt, inner ysep=6pt, font=\small}}
+\tikzset{neighbor/embedCell/.style={draw=AMU_dk1!70!AMU_lt1, rounded corners=2pt, minimum width=0.58cm, minimum height=0.7cm}}
+\tikzset{neighbor/arrow/.style={->, >=Stealth, line width=1pt, draw=tokenConnector}}
+\tikzset{neighbor/nn/.style={draw=AMU_dk1, rounded corners=10pt, fill=tokenSentenceBg, inner xsep=16pt, inner ysep=14pt, align=left, font=\small}}
+\tikzset{neighbor/prediction/.style={font=\bfseries\large, text=AMU_dk1}}
+\tikzset{neighbor/predLabel/.style={font=\small\bfseries, text=llmGray}}
+
 \newcommand{\llmParagraph}[4]{%
   \begin{scope}[shift={#1}]
     \foreach \offset/\length in {#3} {
@@ -67,6 +98,17 @@
   \end{scope}%
 }
 
+\newcommand{\llmEmbeddingBlocksSmall}[3]{%
+  \begin{scope}[shift={#1}]
+    \foreach [count=\i] \shade in {#3} {
+      \pgfmathsetmacro{\xshift}{(\i-1)*0.6}
+      \path[draw=black, fill=\shade, rounded corners=2pt]
+        (\xshift cm,-0.18cm) rectangle ++(0.5cm,0.5cm);
+    }
+  \end{scope}%
+}
+
+
 \newcommand{\TokenWordRow}[4]{%
   \foreach [count=\i] \word in {#4} {
     \ifnum\i=1
@@ -75,6 +117,13 @@
       \pgfmathtruncatemacro{\prev}{\i-1}
       \node[#3, right=0.12cm of #2-\prev] (#2-\i) {\strut \word};
     \fi
+  }%
+}
+
+\newcommand{\NeighborEmbeddingRow}[3]{%
+  \foreach [count=\i] \shade in {#3} {
+    \pgfmathsetmacro{\xshift}{(\i-1)*0.65}
+    \node[neighbor/embedCell, fill=\shade] (#2-\i) at ($(#1)+(\xshift cm,0)$) {};
   }%
 }
 
@@ -151,6 +200,38 @@
   \end{tikzpicture}%
 }
 
+\newcommand{\WordEmbeddingNeighborDiagram}{%
+  \begin{tikzpicture}[font=\small]
+    \node[neighbor/word] (wordDrone) at (0,-1.1) {Drone};
+    \node[neighbor/word] (wordSmart) at (0,-2.5) {Smart};
+
+    \node[neighbor/colLabel] at ($(wordDrone)+(0,1.05cm)$) {Words};
+
+    \coordinate (droneEmbStart) at ($(wordDrone.east)+(.55cm,0)$);
+    \coordinate (smartEmbStart) at ($(wordSmart.east)+(.55cm,0)$);
+
+    \node[neighbor/colLabel] at ($(droneEmbStart)+(1.2cm,1.05cm)$) {Embeddings};
+    \llmEmbeddingBlocksSmall{($(droneEmbStart)+(0.35cm,0)$)}{black}{llmEmbedDroneA, llmEmbedDroneB, llmEmbedDroneD, llmEmbedDroneC, llmEmbedDroneE}
+    \llmEmbeddingBlocksSmall{($(smartEmbStart)+(0.35cm,0)$)}{black}{llmEmbedSmartB, llmEmbedSmartC, llmEmbedSmartE, llmEmbedSmartD, llmEmbedSmartA}
+
+
+    \draw[neighbor/arrow] (wordDrone.east) -- (droneEmbStart.west);
+    \draw[neighbor/arrow] (wordSmart.east) -- (smartEmbStart.west);
+
+    \coordinate (nnMid) at ($(droneEmbStart.east)!0.5!(smartEmbStart-5.east)+(3.7cm,-1.25cm)$);
+    \node[neighbor/nn, anchor=west, minimum height=1.0cm] (network) at ($(nnMid)+(1.45cm,0)$) {Are the two \\ words neighbors?};
+    \node[neighbor/colLabel, anchor=south] at ($(network.north)+(0,0.85cm)$) {Neural network};
+    \draw[neighbor/arrow] ($(nnMid.east)+(0.2cm,-0.8cm)$) -- (network.west);
+    \draw[neighbor/arrow] ($(nnMid.east)+(0.2cm,0.8cm)$) -- (network.west);
+  
+    \node[neighbor/colLabel, anchor=south] at ($(network.north)+(4cm,0.85cm)$) {Prediction};
+    \node[neighbor/prediction, anchor=west] (predictionValue) at ($(network.east)+(1.6cm,0)$) {0.84};
+   \draw[neighbor/arrow] (network.east) -- (predictionValue.west);
+
+    %\node[neighbor/predLabel, anchor=south] at ($(predictionValue)+(0,0.85cm)$) {Model prediction};
+  \end{tikzpicture}%
+}
+
 \newcommand{\VectorRepDiagram}{%
   \begin{tikzpicture}[font=\small, node distance=0.35cm and 3.4cm]
 
@@ -169,7 +250,7 @@
 
     \coordinate (vocabStart) at ($(wordA-1)+(0,-2.35cm)$);
     \TokenWordRow{(vocabStart)}{vocab}{token/vocabWord}{This,is,a,smart,robot,My,drone}
-     \node[token/bit, below=0.4cm of vocab-1] (bit1) {1};
+    \node[token/bit, below=0.4cm of vocab-1] (bit1) {1};
     \node[token/bit, below=0.4cm of vocab-2] (bit2) {1};
     \node[token/bit, below=0.4cm of vocab-3] (bit3) {1};
     \node[token/bit, below=0.4cm of vocab-4] (bit4) {1};
@@ -285,7 +366,7 @@
 
 \begin{frame}{LLM Capabilities}
   \centering
-  \resizebox{!}{0.75\textheight}{\LLMPipelineDiagram}
+  \resizebox{!}{0.85\textheight}{\LLMPipelineDiagram}
 \end{frame}
 
 \begin{frame}{Bagg of words - Whitespace Tokenization}
@@ -301,6 +382,13 @@
   
 
   Bag of words is created counting the number of occurrences of each word in the vocabulary.
+\end{frame}
+
+\begin{frame}{Embedding Neighbors Task}
+  \begin{center}
+  \WordEmbeddingNeighborDiagram
+  \end{center}
+    The neural network is trained to predict if two words are neighbors (appear in similar contexts).
 \end{frame}
 
 
