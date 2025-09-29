@@ -1,0 +1,263 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{beamerthemeAMU}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+% TikZ styles for reusable LLM flow elements
+\colorlet{llmInputBg}{AMU_acc5!35!AMU_lt1}
+\colorlet{llmCoreBg}{AMU_dk2!15!AMU_lt1}
+\colorlet{llmOutputBg}{AMU_lt2!30!AMU_lt1}
+\colorlet{llmInputAccent}{AMU_acc6}
+\colorlet{llmTextAccent}{AMU_dk2}
+\colorlet{llmEmbedA}{AMU_acc5}
+\colorlet{llmEmbedB}{AMU_dk2!60!AMU_lt1}
+\colorlet{llmEmbedC}{AMU_acc6!70!AMU_lt1}
+\colorlet{llmEmbedD}{AMU_acc1}
+\colorlet{llmGray}{AMU_dk1!65!AMU_lt1}
+\colorlet{llmGrayLight}{AMU_dk1!40!AMU_lt1}
+\colorlet{llmArrow}{AMU_acc1}
+\colorlet{llmCoreTitle}{AMU_dk2}
+
+\colorlet{tokenSentenceBg}{AMU_dk2!12!AMU_lt1}
+\colorlet{tokenSentenceBorder}{AMU_dk1!80!AMU_dk2}
+\colorlet{tokenWordBgA}{AMU_acc5!70!AMU_lt1}
+\colorlet{tokenWordBgB}{AMU_lt2!80!AMU_lt1}
+\colorlet{tokenVocabBg}{AMU_lt2!60!AMU_lt1}
+\colorlet{tokenConnector}{AMU_dk1!70!AMU_lt1}
+
+\tikzset{llm/box/.style={draw=black, rounded corners=6pt, inner sep=10pt, align=center}}
+\tikzset{llm/input/.style={llm/box, fill=llmInputBg, minimum width=6.8cm, minimum height=2.0cm}}
+\tikzset{llm/core/.style={llm/box, fill=llmCoreBg, minimum width=6.2cm, minimum height=1.8cm}}
+\tikzset{llm/outputEmbedding/.style={llm/box, fill=llmOutputBg, minimum width=3.8cm, minimum height=1.5cm}}
+\tikzset{llm/output/.style={llm/box, fill=llmOutputBg, minimum width=3.8cm, minimum height=2.4cm}}
+\tikzset{llm/arrow/.style={->, line width=1.2pt, >=Stealth, draw=llmArrow}}
+
+\tikzset{token/sentenceLabel/.style={font=\bfseries\small, text=AMU_dk1}}
+\tikzset{token/sentence/.style={draw=tokenSentenceBorder, fill=tokenSentenceBg, rounded corners=8pt, font=\small, inner xsep=12pt, inner ysep=8pt, align=center}}
+\tikzset{token/arrow/.style={->, line width=1pt, >=Stealth, draw=tokenConnector}}
+\tikzset{token/annotation/.style={font=\scriptsize, text=tokenConnector}}
+\tikzset{token/word/.style={draw=AMU_dk1, rounded corners=6pt, font=\small\bfseries, inner xsep=10pt, inner ysep=7pt, align=center}}
+\tikzset{token/wordA/.style={token/word, fill=tokenWordBgA}}
+\tikzset{token/wordB/.style={token/word, fill=tokenWordBgB}}
+\tikzset{token/vocabWord/.style={token/word, fill=tokenVocabBg}}
+\tikzset{token/vocabLabel/.style={font=\small\bfseries, text=AMU_dk1}}
+\tikzset{token/span/.style={<->, line width=1pt, draw=tokenConnector, densely dashed}}
+
+\newcommand{\llmParagraph}[4]{%
+  \begin{scope}[shift={#1}]
+    \foreach \offset/\length in {#3} {
+      \draw[line width=#2, line cap=round, draw=#4] (0,\offset) -- ++(\length,0);
+    }
+  \end{scope}%
+}
+
+\newcommand{\llmEmbeddingBlocks}[3]{%
+  \begin{scope}[shift={#1}]
+    \foreach [count=\i] \shade in {#3} {
+      \pgfmathsetmacro{\xshift}{(\i-1)*0.8}
+      \path[draw=black, fill=\shade, rounded corners=2pt]
+        (\xshift cm,-0.28cm) rectangle ++(0.65cm,0.65cm);
+    }
+  \end{scope}%
+}
+
+\newcommand{\TokenWordRow}[4]{%
+  \foreach [count=\i] \word in {#4} {
+    \ifnum\i=1
+      \node[#3] (#2-\i) at #1 {\strut \word};
+    \else
+      \pgfmathtruncatemacro{\prev}{\i-1}
+      \node[#3, right=0.12cm of #2-\prev] (#2-\i) {\strut \word};
+    \fi
+  }%
+}
+
+\newcommand{\WhitespaceTokenDiagram}{%
+  \begin{tikzpicture}[font=\small, node distance=0.35cm and 3.4cm]
+    \node[token/sentenceLabel] (labelA) {Input};
+    \node[token/sentence, below=0.28cm of labelA] (sentenceA) {This is a smart robot};
+
+    \node[token/sentenceLabel, right=4.6cm of labelA] (labelB) {Input};
+    \node[token/sentence, below=0.28cm of labelB] (sentenceB) {My drone is smart};
+
+    \coordinate (splitA) at ($(sentenceA.south)+(0,-0.45cm)$);
+    \coordinate (splitB) at ($(sentenceB.south)+(0,-0.45cm)$);
+
+    \draw[token/arrow] (sentenceA.south) -- (splitA);
+    \draw[token/arrow] (sentenceB.south) -- (splitB);
+
+    \coordinate (splitMid) at ($(splitA)!0.5!(splitB)$);
+    \node[token/annotation] (splitLabel) at ($(splitMid)+(0,-0.3cm)$) {Split input by a \textbf{whitespace}};
+
+    \coordinate (rowAstart) at ($(splitA)+(-2.4cm,-1.05cm)$);
+    \coordinate (rowBstart) at ($(splitB)+(-0.4cm,-1.05cm)$);
+
+    \TokenWordRow{(rowAstart)}{wordA}{token/wordA}{This,is,a,smart,robot}
+    \TokenWordRow{(rowBstart)}{wordB}{token/wordB}{My,drone,is,smart}
+
+    \coordinate (vocabStart) at ($(wordA-1)+(0,-2.35cm)$);
+    \TokenWordRow{(vocabStart)}{vocab}{token/vocabWord}{This,is,a,smart,robot,My,drone}
+
+    \node[token/annotation] (vocabLabel) at ($(vocab-4)+(0,0.95cm)$) {Create a \textbf{vocabulary}};
+    %\draw[token/arrow] (splitMid) -- (vocabLabel.north);
+    \draw[token/arrow] ($(splitA)+(-2.4cm,-1.5cm)$) -- ($(vocabStart.north)+(0,1cm)$);
+    \draw[token/arrow] ($(splitA)+(5.1cm,-1.6cm)$) -- ($(vocabStart.north)+(7.5cm,1cm)$);
+
+    \draw[token/span] ($(vocab-1.south west)+(0,-0.15cm)$) -- ($(vocab-7.south east)+(0,-0.15cm)$);
+    \node[token/annotation] at ($(vocab-1.south west)!0.5!(vocab-7.south east)+(0,-0.42cm)$) {Vocabulary size};
+  \end{tikzpicture}%
+}
+
+\newcommand{\LLMPipelineDiagram}{%
+  \begin{tikzpicture}[font=\small, node distance=1.3cm and 2.2cm]
+    \node[align=center, font=\bfseries] (inputlabel) {\large Text input\\{\normalsize\color{llmGray} Unstructured data}};
+    \node[llm/input, below=0.4cm of inputlabel] (inputbox) {};
+
+    \llmParagraph{($(inputbox.west)+(0.55cm,0)$)}{6pt}{0.45/4.8cm,0/4.5cm,-0.45/4.2cm}{llmInputAccent}
+
+    \node[llm/core, below=1.5cm of inputbox] (core) {\textcolor{llmCoreTitle}{\bfseries Language AI}\\{\normalsize\color{llmGray} Processes the input text}};
+
+    \draw[llm/arrow] (inputbox.south) -- (core.north);
+
+    \coordinate (split) at ($(core.south)+(0,-0.6cm)$);
+    \draw[llm/arrow] (core.south) -- (split);
+
+    \node[llm/output, below left=2.9cm and 2.2cm of core] (textout) {};
+    \node[llm/outputEmbedding, below=2.9cm of core] (embeddings) {};
+    \node[llm/output, below right=2.9cm and 2.2cm of core] (classify) {};
+
+    \node[align=center, font=\bfseries] at ($(textout.south)+(0,-1.0cm)$) {Text output\\{\normalsize\color{llmGray} Generative modeling}};
+    \node[align=center, font=\bfseries] at ($(embeddings.south)+(0,-1.0cm)$) {Embeddings\\{\normalsize\color{llmGray} Numeric values}};
+    \node[align=center, font=\bfseries] at ($(classify.south)+(0,-1.0cm)$) {Classification\\{\normalsize\color{llmGray} Identify targets}};
+
+    \draw[llm/arrow] (split) -| (textout.north);
+    \draw[llm/arrow] (split) -- (embeddings.north);
+    \draw[llm/arrow] (split) -| (classify.north);
+
+    \llmParagraph{($(textout.west)+(0.4cm,0.4cm)$)}{5pt}{0.3/2.2cm,-0.3/2.2cm,-0.9/2.2cm}{llmTextAccent}
+
+    \llmEmbeddingBlocks{($(embeddings.west)+(0.35cm,0)$)}{black}{llmEmbedD, llmEmbedA,llmEmbedB,llmEmbedC}
+
+    \llmParagraph{($(classify.west)+(0.4cm,0.4cm)$)}{5pt}{0/2.4cm}{llmTextAccent}
+    \llmParagraph{($(classify.west)+(0.4cm,-0.12cm)$)}{5pt}{0/2.1cm,-0.6/2.2cm}{llmGrayLight}
+  \end{tikzpicture}%
+}
+
+
+
+% Listing style for small code snippets
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
+
+
+\title{Large Language Models in Data Science}
+\subtitle{Week 1: Concepts, Architecture, Motivation}
+\author{Sebastian Mueller}
+\institute{Aix-Marseille Universit\'e}
+\date{2025-2026}
+
+\begin{document}
+
+\begin{frame}{LLM Model Timeline (2000--2024)}
+  \centering
+  \colorlet{colDec}{AMU_acc1!75!AMU_dk2}
+  \colorlet{colEnc}{AMU_acc5}
+  \colorlet{colED}{AMU_lt2!65!AMU_acc5}
+  \colorlet{colNon}{AMU_acc4!85!AMU_lt1}
+
+  \begin{tikzpicture}[>=Stealth, thick]
+    \tikzset{event/.style={draw=AMU_dk1, rounded corners=2pt, inner xsep=4pt, inner ysep=2pt, font=\footnotesize, align=center}}
+
+    % Baseline: dotted before 2017, solid afterwards
+    \draw[dotted, AMU_dk2!35!AMU_lt1] (0,0) -- (2.6,0);
+    \draw[->, AMU_acc1] (2.6,0) -- (10,0);
+
+    % Ticks and labels
+    \foreach \x/\label in {
+      0/{$\sim$2000},
+      2.6/2013,
+      3.8/2017,
+      4.6/2018,
+      5.4/2019,
+      6.2/2020,
+      7.0/2021,
+      7.8/2022,
+      8.6/2023,
+      9.4/2024
+    }{
+      \draw (\x,0) -- (\x,0.18);
+      \node[below=2pt, font=\scriptsize] at (\x,0) {\label};
+    }
+
+    % Events
+    % Non-transformer
+    \draw (0,0) -- (0,0.9);
+    \node[event, fill=colNon, anchor=south] at (0,0.9) {Bag-of-words};
+
+    \draw (2.6,0) -- (2.6,1.2);
+    \node[event, fill=colNon, anchor=south] at (2.6,1.2) {word2vec};
+
+    \draw (3.8,0) -- (3.8,+0.9);
+    \node[event, fill=colNon, anchor=north] at (3.8,+0.9) {Attention};
+
+    % Encoder-only
+    \draw (4.5,0) -- (4.5,1.1);
+    \node[event, fill=colEnc, anchor=south] at (4.5,1.1) {BERT};
+
+    \draw (5.3,0) -- (5.3,1.7);
+    \node[event, fill=colEnc, anchor=south] at (5.3,1.7) {RoBERTa};
+
+    \draw (5.5,0) -- (5.5,2.25);
+    \node[event, fill=colEnc, anchor=south] at (5.5,2.25) {DistilBERT};
+
+    % Decoder-only
+    \draw (4.8,0) -- (4.8,-1.3);
+    \node[event, fill=colDec, anchor=north] at (4.8,-1.3) {GPT};
+
+    \draw (5.4,0) -- (5.4,-1.1);
+    \node[event, fill=colDec, anchor=south] at (5.4,-1.1) {GPT-2};
+
+    \draw (6.2,0) -- (6.2,-1.8);
+    \node[event, fill=colDec, anchor=south] at (6.2,-1.8) {GPT-3};
+
+    \draw (8.4,0) -- (8.4,1.6);
+    \node[event, fill=colDec, anchor=south] at (8.4,1.6) {ChatGPT};
+
+    \draw (8.9,0) -- (8.9,1.0);
+    \node[event, fill=colDec, anchor=south] at (8.9,1.0) {GPT-4};
+
+    % Encoder-decoder
+    \draw (6.4,0) -- (6.4,1.0);
+    \node[event, fill=colED, anchor=north] at (6.4,1.0) {T5};
+
+    \draw (7.0,0) -- (7.0,1.0);
+    \node[event, fill=colED, anchor=south] at (7.0,1.0) {Switch};
+
+    \draw (8.3,0) -- (8.3,-0.8);
+    \node[event, fill=colED, anchor=north] at (8.3,-0.8) {Flan-T5};
+
+    % Legend
+    \begin{scope}[shift={(0,-2.2)}]
+      \node[event, fill=colDec] at (1.6,0) {\scriptsize Decoder-only};
+      \node[event, fill=colEnc] at (4.8,0) {\scriptsize Encoder-only};
+      \node[event, fill=colED] at (8.0,0) {\scriptsize Encoder--decoder};
+      \node[event, fill=colNon] at (11.2,0) {\scriptsize Non-transformer models};
+    \end{scope}
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Whitespace Tokenization}
+  \centering
+  \WhitespaceTokenDiagram
+\end{frame}
+
+\begin{frame}{LLM Capabilities}
+  \centering
+  \resizebox{!}{0.55\textheight}{\LLMPipelineDiagram}
+\end{frame}
+
+\end{document}
