@@ -6,7 +6,7 @@
 \usepackage{listings}
 \usepackage{hyperref}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,calc}
+\usetikzlibrary{arrows.meta,positioning,calc,matrix}
 
 % TikZ styles for reusable LLM flow elements
 \colorlet{llmInputBg}{AMU_acc5!35!AMU_lt1}
@@ -53,6 +53,13 @@
 \colorlet{neighborBlueC}{AMU_acc6!75!AMU_lt1}
 \colorlet{neighborBlueD}{AMU_acc6!90!AMU_lt1}
 
+\colorlet{dimCellGray}{AMU_dk1!25!AMU_lt1}
+\colorlet{dimCellRed}{AMU_acc3!65!AMU_lt1}
+\colorlet{dimCellBlue}{AMU_dk2!65!AMU_lt1}
+\colorlet{dimCellOrange}{AMU_acc3!40!AMU_lt2}
+\colorlet{dimCellPurple}{AMU_acc6!65!AMU_lt1}
+\colorlet{dimCellGreen}{AMU_lt2!45!AMU_acc1}
+
 \tikzset{llm/box/.style={draw=black, rounded corners=6pt, inner sep=10pt, align=center}}
 \tikzset{llm/input/.style={llm/box, fill=llmInputBg, minimum width=6.8cm, minimum height=2.0cm}}
 \tikzset{llm/core/.style={llm/box, fill=llmCoreBg, minimum width=6.2cm, minimum height=1.8cm}}
@@ -79,6 +86,20 @@
 \tikzset{neighbor/nn/.style={draw=AMU_dk1, rounded corners=10pt, fill=tokenSentenceBg, inner xsep=16pt, inner ysep=14pt, align=left, font=\small}}
 \tikzset{neighbor/prediction/.style={font=\bfseries\large, text=AMU_dk1}}
 \tikzset{neighbor/predLabel/.style={font=\small\bfseries, text=llmGray}}
+
+\tikzset{dim/wordHeading/.style={font=\small\bfseries, text=AMU_dk1}}
+\tikzset{dim/rowLabel/.style={font=\small, text=llmGray, anchor=east}}
+\tikzset{dim/cell/.style={draw=AMU_dk1, rounded corners=2pt, minimum width=1.2cm, minimum height=0.9cm, font=\small, inner sep=2pt}}
+\tikzset{dim/cellGray/.style={dim/cell, fill=dimCellGray}}
+\tikzset{dim/cellRed/.style={dim/cell, fill=dimCellRed}}
+\tikzset{dim/cellBlue/.style={dim/cell, fill=dimCellBlue}}
+\tikzset{dim/cellOrange/.style={dim/cell, fill=dimCellOrange}}
+\tikzset{dim/cellPurple/.style={dim/cell, fill=dimCellPurple}}
+\tikzset{dim/cellGreen/.style={dim/cell, fill=dimCellGreen}}
+\tikzset{dim/dots/.style={font=\Large, text=llmGray}}
+\tikzset{dim/axisArrow/.style={<->, densely dotted, line width=1pt, draw=tokenConnector}}
+\tikzset{dim/axisLabel/.style={font=\small\bfseries, text=AMU_dk1}}
+\tikzset{dim/axisLabelSub/.style={font=\footnotesize, text=llmGray}}
 
 \newcommand{\llmParagraph}[4]{%
   \begin{scope}[shift={#1}]
@@ -126,6 +147,10 @@
     \node[neighbor/embedCell, fill=\shade] (#2-\i) at ($(#1)+(\xshift cm,0)$) {};
   }%
 }
+
+
+
+  
 
 
 
@@ -481,10 +506,80 @@
 The neural network learns the weights of the connections to optimize its predictions.
 \end{frame}
 
-\begin{frame}
-\begin{center}
-    
-\end{center}
+\begin{frame}{Embedding Dimensions}
+  \begin{center}
+\colorlet{dimCellGray}{AMU_dk1!25!AMU_lt1}
+\colorlet{dimCellRed}{AMU_acc3!65!AMU_lt1}
+\colorlet{dimCellBlue}{AMU_dk2!65!AMU_lt1}
+\colorlet{dimCellOrange}{AMU_acc3!40!AMU_lt2}
+\colorlet{dimCellPurple}{AMU_acc6!65!AMU_lt1}
+\colorlet{dimCellGreen}{AMU_lt2!45!AMU_acc1}
+\tikzset{dim/wordHeading/.style={font=\small\bfseries, text=AMU_dk1}}
+\tikzset{dim/rowLabel/.style={font=\small, text=llmGray, anchor=east}}
+\tikzset{dim/cell/.style={draw=AMU_dk1, rounded corners=2pt, minimum width=1.2cm, minimum height=0.9cm, font=\small, inner sep=2pt}}
+\tikzset{dim/cellGray/.style={dim/cell, fill=dimCellGray}}
+\tikzset{dim/cellRed/.style={dim/cell, fill=dimCellRed}}
+\tikzset{dim/cellBlue/.style={dim/cell, fill=dimCellBlue}}
+\tikzset{dim/cellOrange/.style={dim/cell, fill=dimCellOrange}}
+\tikzset{dim/cellPurple/.style={dim/cell, fill=dimCellPurple}}
+\tikzset{dim/cellGreen/.style={dim/cell, fill=dimCellGreen}}
+\tikzset{dim/dots/.style={font=\Large, text=llmGray}}
+\tikzset{dim/axisArrow/.style={<->, densely dotted, line width=1pt, draw=tokenConnector}}
+\tikzset{dim/axisLabel/.style={font=\small\bfseries, text=AMU_dk1}}
+\tikzset{dim/axisLabelSub/.style={font=\footnotesize, text=llmGray}}
+\resizebox{!}{0.65\textheight}{
+  \begin{tikzpicture}[font=\small]
+    \matrix (dim) [matrix of nodes, ampersand replacement=\&,
+      column sep=0.5cm,
+      row sep=0.1cm,
+      nodes={anchor=center}]
+    {
+        \& |[dim/wordHeading]| sheeps \& |[dim/wordHeading]| puppy \& |[dim/wordHeading]| houses \& |[dim/wordHeading]| apple \& |[dim/wordHeading]| robot \\
+      |[dim/rowLabel]| animal \& |[dim/cellRed]| {.90} \& |[dim/cellBlue]| {.94} \& |[dim/cellGray]| {-0.56} \& |[dim/cellGray]| {-0.71} \& |[dim/cellGray]| {.01} \\
+      |[dim/rowLabel]| machine \& |[dim/cellGray]| {-0.11} \& |[dim/cellBlue]| {.71} \& |[dim/cellGray]| {-0.32} \& |[dim/cellGray]| {-0.15} \& |[dim/cellGreen]| {.90} \\
+      |[dim/rowLabel]| human \& |[dim/cellGray]| {.19} \& |[dim/cellGray]| {.36} \& |[dim/cellGray]| {.31} \& |[dim/cellGray]| {.29} \& |[dim/cellGreen]| {-.87} \\
+      |[dim/dots]| {$\vdots$} \& |[dim/dots]| {$\vdots$} \& |[dim/dots]| {$\vdots$} \& |[dim/dots]| {$\vdots$} \& |[dim/dots]| {$\vdots$} \& |[dim/dots]| {$\vdots$} \\
+      |[dim/rowLabel]| plural \& |[dim/cellRed]| {.94} \& |[dim/cellGray]| {-0.82} \& |[dim/cellOrange]| {.94} \& |[dim/cellGray]| {-0.51} \& |[dim/cellGray]| {-0.11} \\
+      |[dim/rowLabel]| fruit \& |[dim/cellGray]| {-0.51} \& |[dim/cellGray]| {-0.91} \& |[dim/cellGray]| {-0.5} \& |[dim/cellPurple]| {.90} \& |[dim/cellGray]| {-0.51} \\
+    };
+
+    \coordinate (arrowTop) at ($(dim-2-6.north east)+(0.5cm,0.15cm)$);
+    \coordinate (arrowBottom) at ($(dim-7-6.south east)+(0.5cm,-0.15cm)$);
+    \draw[dim/axisArrow] (arrowTop) -- (arrowBottom);
+
+    \coordinate (axisMid) at ($(arrowTop)!0.5!(arrowBottom)$);
+    \coordinate (axisMid) at ($(arrowTop)!0.5!(arrowBottom)$);
+\node[dim/axisLabel, rotate=-90, anchor=south] at ($(axisMid)+(0.8cm,0.3cm)$) {Number of dimensions};
+ \end{tikzpicture}}%
+ \end{center}
+ The values in the embedding vectors represent different \textbf{latent} features of words. The dimensions do not have an explicit meaning.
+\end{frame}
+
+\begin{frame}{2D Embedding Visualization}
+  \centering
+  \begin{tikzpicture}[scale=0.6]
+    % Draw the grid
+    \draw[gray!30, thin] (0,0) grid (9,9);
+    \colorlet{dimCellGray}{AMU_dk1!65!AMU_lt1}
+\colorlet{dimCellRed}{AMU_acc3!85!AMU_lt1}
+\colorlet{dimCellBlue}{AMU_dk2!85!AMU_lt1}
+\colorlet{dimCellOrange}{AMU_acc3!60!AMU_lt2}
+\colorlet{dimCellPurple}{AMU_acc6!85!AMU_lt1}
+\colorlet{dimCellGreen}{AMU_lt2!85!AMU_acc1}
+
+    % Dots (embeddings)
+    \fill[dimCellRed] (1,3) circle (0.15);  % sheeps
+    \node[above=0.2cm, text=dimCellRed] at (1,3) {sheeps};
+    \fill[dimCellBlue] (3.5,8.5) circle (0.15); %
+    \node[above=0.2cm, text=dimCellBlue] at (3.5,8.5) {puppy};
+
+    \fill[dimCellOrange] (5,5.5) circle (0.15); 
+    \node[above=0.2cm, text=dimCellOrange] at (5,5.5) {houses};
+    \fill[dimCellPurple] (7,7) circle (0.15); 
+    \node[above=0.2cm, text=dimCellPurple] at (7,7) {apple};
+    \fill[dimCellGray] (8,2) circle (0.15); 
+    \node[above=0.2cm, text=dimCellGray] at (8,2) {robot};
+  \end{tikzpicture}
 \end{frame}
 
 
