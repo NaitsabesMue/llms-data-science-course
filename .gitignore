@@ -1,0 +1,21 @@
+# Python virtual environments
+venvLLMDS/
+.venv/
+
+# Local environment variables
+.env
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.toc
+*.out
+*.nav
+*.snm
+*.vrb
+
+# macOS
+.DS_Store

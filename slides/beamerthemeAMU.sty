@@ -1,0 +1,121 @@
+
+% !TeX root = lecture1_motivation.tex
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerthemeAMU}[2025/09/23 AMU beamer theme (based on AMU 16:9 POTX)]
+
+% ===== Engine & fonts =====
+\RequirePackage{iftex}
+\ifPDFTeX
+  % Fallback for pdfLaTeX: use default sans serif
+  \PassOptionsToPackage{scaled=0.95}{helvet}
+  \RequirePackage{helvet}
+\else
+  \RequirePackage{fontspec}
+  % TODO: set official AMU fonts if installed, e.g.:
+  % \setsansfont{Monument Grotesk}[%
+  %   BoldFont = {Monument Grotesk Medium},
+  %   Scale=MatchLowercase,
+  %   Ligatures=TeX]
+  % Temporary fallback:
+  \setsansfont{Helvetica Neue}[Scale=MatchLowercase,Ligatures=TeX]
+\fi
+
+% ===== Colors (from theme1.xml) =====
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+\definecolor{AMU_dk1}{HTML}{000000}
+\definecolor{AMU_lt1}{HTML}{FFFFFF}
+\definecolor{AMU_dk2}{HTML}{1E62DC} % AMU blue
+\definecolor{AMU_lt2}{HTML}{FFFE85} % AMU yellow
+\definecolor{AMU_acc1}{HTML}{00008E} % deep blue
+\definecolor{AMU_acc2}{HTML}{FFFFBF}
+\definecolor{AMU_acc3}{HTML}{990000}
+\definecolor{AMU_acc4}{HTML}{FFD4CC}
+\definecolor{AMU_acc5}{HTML}{DCCBFE}
+\definecolor{AMU_acc6}{HTML}{640097}
+\definecolor{AMU_hlink}{HTML}{1E63DD}
+\definecolor{AMU_folH}{HTML}{980000}
+
+% ===== Theme base =====
+\mode<presentation>{
+  \usetheme{default}
+  \usecolortheme{default}
+  \setbeamercolor{background canvas}{bg=AMU_lt1}
+  \setbeamercolor{normal text}{fg=AMU_dk1}
+  \setbeamercolor{structure}{fg=AMU_dk2}
+  \setbeamercolor{frametitle}{fg=AMU_dk1,bg=AMU_lt1}
+  \setbeamercolor{title}{fg=AMU_dk1}
+  \setbeamercolor{subtitle}{fg=AMU_acc1}
+  \setbeamercolor{block title}{fg=AMU_lt1,bg=AMU_dk2}
+  \setbeamercolor{block body}{bg=black!2!white}
+  \setbeamercolor{itemize item}{fg=AMU_dk2}
+  \setbeamercolor{itemize subitem}{fg=AMU_acc1}
+  \setbeamercolor{section in toc}{fg=AMU_dk2}
+  \hypersetup{colorlinks=true, linkcolor=AMU_hlink, urlcolor=AMU_hlink, citecolor=AMU_acc6}
+}
+
+% ===== Layout =====
+\setbeamersize{text margin left=1.1cm,text margin right=1.1cm}
+\setbeamertemplate{navigation symbols}{}
+
+% Frame title bar with subtle underline in AMU blue
+\setbeamertemplate{frametitle}{
+  \vspace{0.2ex}
+  {\usebeamercolor[fg]{frametitle}\Large\insertframetitle\par}
+  \vspace{0.6ex}
+  {\color{AMU_dk2}\rule{\linewidth}{0.8pt}}
+}
+
+% Title page
+\newcommand{\AMUtitlebar}{%
+  \noindent\colorbox{AMU_dk2}{\parbox[c][1.2ex][c]{0.36\linewidth}{\ }}%
+  \colorbox{AMU_lt2}{\parbox[c][1.2ex][c]{0.28\linewidth}{\ }}%
+  \colorbox{AMU_acc6}{\parbox[c][1.2ex][c]{0.36\linewidth}{\ }}%
+}
+% Title page with logo
+\setbeamertemplate{title page}{
+  \begin{minipage}[b][0.8\paperheight][t]{\linewidth}
+    \raggedright
+    \AMUtitlebar\par\vspace{1.5ex}
+    {\usebeamercolor[fg]{title}\LARGE\bfseries\inserttitle\par}
+    \vspace{0.2ex}
+    {\usebeamercolor[fg]{subtitle}\large\insertsubtitle\par}
+    \vspace{1.2ex}
+    {\normalsize\insertauthor\par}
+    {\small\insertinstitute\par}
+    {\small\insertdate\par}
+    \vfill
+    \hfill\includegraphics[width=3.5cm]{amu_logo.png}
+  \end{minipage}
+  \vspace{1.2ex}
+  \AMUtitlebar
+}
+
+% Footer with page numbers
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \vbox{
+    \vspace{1.2ex}% extra bottom margin
+    \hbox{%
+      \begin{beamercolorbox}[wd=.8\paperwidth,ht=2.6ex,dp=1.0ex,left]{author in head/foot}%
+        \hspace{1em}{\footnotesize \insertshorttitle}
+      \end{beamercolorbox}%
+      \begin{beamercolorbox}[wd=.2\paperwidth,ht=2.6ex,dp=1.0ex,right]{date in head/foot}%
+        {\footnotesize \insertframenumber{} / \inserttotalframenumber}\hspace{1em}
+      \end{beamercolorbox}%
+    }%
+    \vspace{1.2ex}% extra spacing below footline content
+  }%
+}
+
+% Blocks
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{block title}{series=\bfseries}
+\setbeamerfont{block body}{series=\mdseries}
+
+% Accent helpers
+\newcommand{\AMUblue}[1]{\textcolor{AMU_dk2}{#1}}
+\newcommand{\AMUyellow}[1]{\textcolor{AMU_lt2}{#1}}
+
+\endinput
