@@ -421,7 +421,7 @@
 
 
 
-\begin{frame}{Bagg of words - Whitespace Tokenization}
+\begin{frame}{Bag of words - Whitespace Tokenization}
   \centering
   \begin{tikzpicture}[font=\small, node distance=0.35cm and 3.4cm]
     \node[token/sentenceLabel] (labelA) {Input};
@@ -674,6 +674,15 @@ The neural network learns the weights of the connections to optimize its predict
   \end{tikzpicture}
 \end{frame}
 
+\begin{frame}{Zipf's Law in Language}
+  \begin{itemize}
+    \item Word frequency in natural language follows a power law distribution (Zipf's Law).
+    \item A few words are extremely common, while many words are rare.
+    \item Example: In English, "the" is the most common word, while "quokka" is rare.
+    \item Implication: Tokenizers must balance vocabulary size to cover common words while handling rare words via subword units.
+  \end{itemize}
+\end{frame}
+
 \begin{frame}{Embeddings: Turning Tokens into Vectors}
   \begin{itemize}
     \item \textbf{Embedding matrix} $E \in \mathbb{R}^{V \times d}$ maps token ids to $d$-dimensional vectors.
@@ -698,6 +707,19 @@ The neural network learns the weights of the connections to optimize its predict
     \item Words, subwords, sentences, documents
     \item Also used in other modalities: images, audio, graphs
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Similarity in Embedding Space}
+  \begin{itemize}
+    \item \textbf{Cosine similarity} measures angle between vectors:
+      \[
+        \text{cosine\_sim}(\mathbf{a}, \mathbf{b}) = \frac{\mathbf{a} \cdot \mathbf{b}}{\|\mathbf{a}\| \|\mathbf{b}\|}.
+      \]
+    \item Values range from -1 (opposite) to 1 (same direction).
+    \item Used to find similar words, sentences, or documents.
+    \item Nearest neighhor reveals semantic and functional relationships.
+    \item Beware domain shift; neighbors change with training data
+  \end{itemize}
 \end{frame}
 
 
@@ -883,7 +905,7 @@ The neural network learns the weights of the connections to optimize its predict
 [c]{0.45\textwidth}
 \begin{itemize}
     \item Recurrent Neural Networks process tokens sequentially, limiting parallelism and context length.
-    \item Transformers (Vaswani et al., 2017) introduced self-attention, enabling long-range dependencies and scalable training.
+    \item Transformers (Vaswani et al., 2017) introduced self-attention, enabling long-range dependencies and scalable training, parallelizations on GPUs.
     \item Result: state-of-the-art across NLP tasks, vision-language models, and code generation.
   \end{itemize}
   \end{minipage}
@@ -895,6 +917,7 @@ The neural network learns the weights of the connections to optimize its predict
 
 \end{frame}
 
+
 \begin{frame}{Transformer Architecture Overview}
   \begin{itemize}
     \item Key innovation: \textbf{self-attention} mechanism allows each token to attend to all others in the sequence.
@@ -903,112 +926,21 @@ The neural network learns the weights of the connections to optimize its predict
   \end{itemize}
 \end{frame}
 
-\begin{frame}{The Transformer at a Glance}
-  \begin{itemize}
-    \item \textbf{Encoder--Decoder (original paper)}: encoder builds contextual representations; decoder attends to both past outputs (self-attention) and encoder outputs (cross-attention).
-    \item \textbf{Decoder-only (GPT family)}: uses only causal self-attention with a mask to prevent peeking ahead; simpler and efficient for generation.
-    \item Common building blocks across both: embeddings + positional info, scaled dot-product attention, multi-head projections, residual connections, layer normalization, feed-forward networks.
-  \end{itemize}
-\end{frame}
 
-\begin{frame}{Scaled Dot-Product Attention (Step-by-Step)}
-  \begin{enumerate}
-    \item Project inputs into queries $Q$, keys $K$, values $V$.
-    \item Compute similarity $QK^T / \sqrt{d_k}$ to compare each token to every other token.
-    \item Apply softmax to obtain attention weights (non-negative, sum to 1).
-    \item Multiply by $V$ to aggregate content into contextualized outputs.
-  \end{enumerate}
-  \vspace{0.5em}
-  \textbf{Why these choices?}
-  \begin{itemize}
-    \item \emph{Scaling} by $\sqrt{d_k}$ prevents softmax saturation for large key dimensions, stabilizing gradients.
-    \item \emph{Causal masks} (decoder-only) enforce next-token prediction by zeroing out future positions.
-    \item \emph{Cost}: pairwise comparisons across tokens yield $\mathcal{O}(n^2)$ operations per layer.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Multi-Head Attention (Why and How)}
-  \begin{itemize}
-    \item \textbf{Why}: different heads specialize in different relations (syntax, long-range dependencies, entity linking), improving expressiveness.
-    \item \textbf{How}: run attention $h$ times with independent projections; concatenate head outputs and project back to the model dimension.
-    \item \textbf{Benefit}: multiple perspectives in parallel, while each head uses lower-dimensional projections for efficiency.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Residual Connections and Layer Normalization}
-  \begin{itemize}
-    \item Add \& Norm around attention and feed-forward sublayers improves gradient flow and stabilizes deep networks.
-    \item Residuals preserve information from earlier layers; normalization reduces internal covariate shift.
-    \item \textbf{Why}: without these, very deep stacks are hard to train and prone to divergence.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Position-wise Feed-Forward Networks}
-  \begin{itemize}
-    \item Two linear layers with a nonlinearity (e.g., GELU/ReLU) applied independently to each token position.
-    \item Acts like feature mixing per position after attention blends information across positions.
-    \item \textbf{Why}: adds nonlinear capacity to transform representations beyond weighted averaging.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Stacking Layers and Depth}
-  \begin{itemize}
-    \item Repeating blocks (attention $\rightarrow$ FFN) yields deep models with large effective receptive fields.
-    \item Deeper stacks capture hierarchical patterns, from local syntax to global discourse.
-    \item Practical note: depth, width, and head count are trade-offs among quality, memory, and speed.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Decoder-Only vs. Encoder--Decoder}
-  \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.48\linewidth}
-      \textbf{Decoder-Only (GPT)}
-      \begin{itemize}
-        \item Causal self-attention with masks; generates left-to-right.
-        \item Simpler architecture for pure generation and instruction following.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\linewidth}
-      \textbf{Encoder--Decoder (T5/Seq2Seq)}
-      \begin{itemize}
-        \item Encoder builds source representation; decoder performs masked self-attention + cross-attention to encoder.
-        \item Well-suited for translation and general seq2seq tasks.
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Attention Patterns You Might See}
-  \begin{itemize}
-    \item Local heads focusing on nearby tokens (syntax, agreement).
-    \item Global heads tracking key tokens (names, topics, brackets).
-    \item Positional or delimiter-sensitive heads attending to special tokens.
-    \item These patterns often emerge without explicit supervision.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Visual Walkthrough: Illustrated Transformer}
-  \begin{itemize}
-    \item Highly recommended: \href{https://jalammar.github.io/illustrated-transformer/}{The Illustrated Transformer (Jay Alammar)} for step-by-step visuals.
-    \item Use in class to align equations with diagrams and build intuition.
-  \end{itemize}
-\end{frame}
 
 
 \begin{frame}{Self-Attention: What and Why}
   \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.56\linewidth}
+    \begin{column}{0.6\linewidth}
       \begin{itemize}
         \item \textbf{What}: Each token forms \emph{queries}, \emph{keys}, and \emph{values}: $Q = HW_Q$, $K = HW_K$, $V = HW_V$.
         \item \textbf{Computation}: 
           \[ \text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V. \]
         \item \textbf{Why softmax?} Turns similarity scores into a probability distribution to weight values.
         \item \textbf{Why scale by $\sqrt{d_k}$?} Prevents saturation of softmax for large $d_k$, stabilizing training.
-        \item \textbf{Why causal masks?} Decoder LMs must not see future tokens; mask enforces next-token prediction.
-        \item \textbf{Cost intuition}: pairwise comparisons across tokens $\Rightarrow$ $\mathcal{O}(n^2)$ per layer.
-      \end{itemize}
+         \end{itemize}
     \end{column}
-    \begin{column}{0.4\linewidth}
+    \begin{column}{0.3\linewidth}
       \begin{exampleblock}{Tiny intuition}
         'The cat sat' $\to$ stronger weights to nearby/related tokens (e.g., 'cat' when processing 'sat').
       \end{exampleblock}
@@ -1016,49 +948,90 @@ The neural network learns the weights of the connections to optimize its predict
   \end{columns}
 \end{frame}
 
-\begin{frame}{Multi-Head Attention and Positional Encoding}
+\begin{frame}{The Transformer at a Glance}
   \begin{itemize}
-    \item \textbf{Why multi-head?} Different heads specialize (syntax, co-reference, long vs. short-range) via different projections.
-    \item Implementation: run attention $h$ times with different projections; concatenate and project back to model dimension.
-    \item \textbf{Why positional encodings?} Attention is order-agnostic; positions distinguish 'dog bites man' vs. 'man bites dog'.
-    \item Options: sinusoidal (deterministic) vs. learned/rotary (adapt to data, help long context).
-  \end{itemize}
-\end{frame}
-\begin{frame}{Interactive: Transformer Explainer (Polo Club)}
-  Explore attention live: \href{https://poloclub.github.io/transformer-explainer/}{poloclub.github.io/transformer-explainer}
-\end{frame}
-
-\begin{frame}{Transformer Decoder Block}
-  \begin{itemize}
-    \item Masked multi-head self-attention (prevents peeking at future tokens).
-    \item Add \& norm (residual connection + layer normalization).
-    \item Position-wise feed-forward network (two linear layers with non-linearity).
-    \item Second add \& norm.
-    \item Stack $L$ identical decoder blocks to build deep models (GPT-3: $L=96$ for the largest variant).
+    \item \textbf{Encoder--Decoder (original paper)}: encoder builds contextual representations; decoder attends to both past outputs (self-attention) and encoder outputs (cross-attention).
+    \item \textbf{Encoder-only (BERT family) - representation models}: uses only bidirectional self-attention; effective for understanding tasks.
+    \item \textbf{Decoder-only (GPT family) - generative models}: uses only causal/masked self-attention with a mask to prevent peeking ahead; simpler and efficient for generation.
+    \item Common building blocks across both: embeddings + positional info, scaled dot-product attention, multi-head projections, residual connections, layer normalization, feed-forward networks.
   \end{itemize}
 \end{frame}
 
-\section{Training and Inference}
+\begin{frame}{Neural Machine Translation with Encoder-Decoder RNN}
+  \centering
+  \begin{tikzpicture}[
+    box/.style={rectangle, draw, rounded corners=2pt, minimum height=0.8cm, minimum width=1.5cm, align=center, font=\small},
+    inputbox/.style={box, fill=blue!10},
+    outputbox/.style={box, fill=green!10},
+    encoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=cyan!20},
+    decoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=pink!20},
+    label/.style={font=\small, align=left, text width=2cm}
+  ]
 
-\begin{frame}{Pretraining Objective}
+    % Input sequence
+    \node[inputbox] (i1) at (1,3.5) {I};
+    \node[inputbox] (i2) at (3,3.5) {love};
+    \node[inputbox] (i3) at (5,3.5) {robots};
+
+   
+
+    % Encoder
+    \node[encoderbox, fill=AMU_acc5!80] (enc) at (3,1.5) {
+      \textbf{Encoder (RNN)}\\
+      \small Task: representing language
+    };
+  
+    % Decoder
+    \node[decoderbox,  fill=AMU_acc6!60] (dec) at (3,-0.5) {
+      \textbf{Decoder (RNN)}\\
+      \small Task: generating language
+    };
+   
+
+    % Arrows from encoder to decoder
+    \draw[dotted] (enc.south west) -- (dec.north west);
+    \draw[dotted] (enc.south east) -- (dec.north east);
+    \draw[<->] (enc.south) -- (dec.north) node[midway, right] {}; % Context connection
+
+    % Output sequence
+    \node[outputbox] (o1) at (1,-2.5) {Ich};
+    \node[outputbox] (o2) at (3,-2.5) {liebe};
+    \node[outputbox] (o3) at (5,-2.5) {Roboter};
+
+ % Arrows from input to encoder
+    \draw[->] (i1) -- (enc);
+    \draw[->] (i2) -- (enc);
+    \draw[->] (i3) -- (enc);
+
+    % Arrows from decoder to output
+    \draw[->] (dec) -- (o1);
+    \draw[->] (dec) -- (o2);
+    \draw[->] (dec) -- (o3);
+
+    % Labels
+    \node[label, left=0.5cm of i1.west] {Input\\sequence};
+    \node[label, left=0.5cm of o1.west] {Output\\sequence};
+
+    % Neural Machine Translation label
+    \node[rotate=90, label, anchor=south] at (-1.5,1) {Neural\\machine\\translation};
+
+    % Dotted border around encoder-decoder
+    \draw[dotted] ([xshift=-0.5cm,yshift=0.5cm]enc.north west) rectangle ([xshift=0.5cm,yshift=-0.5cm]dec.south east);
+
+  \end{tikzpicture}
+\end{frame}
+
+
+
+\begin{frame}{Further Reading on Transformers}
   \begin{itemize}
-    \item Learn next-token prediction by minimizing cross-entropy loss:
-      \[
-        \mathcal{L} = -\sum_{t} \log P(x_t \mid x_{<t}).
-      \]
-    \item Trained on internet-scale corpora combining code, books, documentation, and web data (hundreds of billions of tokens).
-    \item Optimization tricks: AdamW optimizer, learning-rate warmup, cosine decay, gradient checkpointing, large batch parallelism.
+    \item Highly recommended: \href{https://jalammar.github.io/illustrated-transformer/}{The Illustrated Transformer (Jay Alammar)} for step-by-step visuals.
+    \item Optional deeper dive: \href{https://www.deeplearning.ai/short-courses/attention-in-transformers-concepts-and-code-in-pytorch/}{Attention in Transformers (Josh Starmer)} for basic understanding of attention.
+    \item Explore attention live: \href{https://poloclub.github.io/transformer-explainer/}{poloclub.github.io/transformer-explainer}
+
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Fine-Tuning and Alignment}
-  \begin{itemize}
-    \item \textbf{Supervised fine-tuning (SFT)} adapts the model on curated instruction-response pairs.
-    \item \textbf{Reinforcement Learning from Human Feedback (RLHF)} trains a reward model to prefer helpful, harmless answers.
-    \item Emerging alternatives: Direct Preference Optimization (DPO), Kahneman-Tversky Optimization (KTO), RAFT.
-    \item Goal: steer base models toward desired tone, task adherence, and safety constraints.
-  \end{itemize}
-\end{frame}
 
 \begin{frame}{Inference and Decoding Strategies}
   \begin{itemize}
@@ -1082,21 +1055,26 @@ The neural network learns the weights of the connections to optimize its predict
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Limitations and Risks}
+\begin{frame}{Limits, Risks, Practices}
   \begin{itemize}
     \item \textbf{Hallucinations}: confident but fabricated answers without grounding.
+    \item \textbf{Inconsistency}: outputs vary with phrasing, temperature, and randomness.
+    %\item \textbf{Lack of true reasoning}: pattern matching, not deep understanding
     \item \textbf{Context window limits}: finite memory (e.g., 8k--200k tokens) affects long documents.
     \item \textbf{Bias and toxicity}: inherited from training data, requiring audits and guardrails.
     \item \textbf{Cost and latency}: API tokens and GPU serving are not free; optimize prompts and batching.
     \item \textbf{No persistent memory}: model forgets state across sessions unless you build storage.
+    \item \textbf{Data privacy}: be cautious with sensitive info; follow provider policies.
+    \item \textbf{Best practices}: clear prompts, few-shot examples, temperature tuning, output validation.
+    \item \textbf{Human-in-the-loop}: always review critical outputs; LLMs assist, not replace, human judgment.
   \end{itemize}
 \end{frame}
 
 \section{Ecosystem and Access}
 
 \begin{frame}{Where to Get Models}
-  \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.48\linewidth}
+  \textbf{Major providers and models}
+  \begin{center}
       \begin{tabular}{@{}lll@{}}
         \toprule
         Provider & Example Models & Access \\
@@ -1108,15 +1086,14 @@ The neural network learns the weights of the connections to optimize its predict
         HuggingFace & Falcon, Phi-2, etc. & Hub + Transformers \\
         \bottomrule
       \end{tabular}
-    \end{column}
-    \begin{column}{0.45\linewidth}
+    \end{center}
+
       \textbf{Choosing a path}
       \begin{itemize}
         \item Hosted APIs: fast start, managed infrastructure, pay per token.
         \item Open weights: more control, but you manage serving, fine-tuning, and safety layers.
       \end{itemize}
-    \end{column}
-  \end{columns}
+    
 \end{frame}
 
 \begin{frame}[fragile]{Calling an API}
@@ -1145,17 +1122,6 @@ print(resp.choices[0].message.content)
   \end{itemize}
 \end{frame}
 
-\section{Lab Preview}
-
-\begin{frame}{Lab Roadmap (3 Hours)}
-  \begin{enumerate}
-    \item Inspect tokenization and context length on sample datasets.
-    \item Use HuggingFace `AutoModel` to extract self-attention scores.
-    \item Call OpenAI API to summarize a dataset description; log latency and token usage.
-    \item Estimate cost of common analytics queries; discuss caching strategies.
-    \item Bonus: visualize attention patterns with BERTviz or BertViz (for encoder models).
-  \end{enumerate}
-\end{frame}
 
 \section{Wrap-Up}
 
@@ -1173,6 +1139,7 @@ print(resp.choices[0].message.content)
   \begin{tabular}{@{}lp{6.8cm}@{}}
     Concept & Reference / Motivation \\
     \midrule
+    Introduction to LLM & \href{https://learn.deeplearning.ai/courses/how-transformer-llms-work} Main components of LLM architecture. \\
     Transformer & \href{https://jalammar.github.io/illustrated-transformer/}{Jay Alammar, Illustrated Transformer} -- visual intuition. \\
     Tokenization & \href{https://github.com/openai/tiktoken}{OpenAI tiktoken repo} -- understand token counts and cost. \\
     Training & \href{https://arxiv.org/abs/2005.14165}{GPT-3 Paper} -- scaling laws and setup. \\
@@ -1180,13 +1147,4 @@ print(resp.choices[0].message.content)
     Fine-tuning & \href{https://huggingface.co/course}{HuggingFace Course} -- hands-on tutorials and tooling. \\
   \end{tabular}
 \end{frame}
-
-\begin{frame}{Looking Ahead}
-  \begin{itemize}
-    \item Next week: Prompt engineering and evaluation patterns.
-    \item Prepare API keys, review prompt design guide, and collect example tasks you want to automate.
-    \item Questions? Reach out on the course Slack before lab day.
-  \end{itemize}
-\end{frame}
-
 \end{document}
