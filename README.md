@@ -77,30 +77,7 @@ Materials and project themes will be released progressively over the semester. S
 - Lab: `labs/week_1_tokenization.ipynb`
 - Readings: [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/), [OpenAI GPT Models Documentation](https://platform.openai.com/docs/guides/gpt), [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
 
-### Week 2 – Prompt Engineering
-- Slides: `slides/week_2_prompting.tex`
-- Lab: `labs/week_2_prompting.ipynb`
-- Readings: [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering), [Google Gemini Prompting Guide](https://ai.google.dev/gemini-api/docs/prompting), [Chain-of-Thought Prompting Elicits Reasoning](https://arxiv.org/abs/2202.12837)
 
-### Week 3 – Fine-Tuning & LoRA
-- Slides: `slides/week_3_finetuning.tex`
-- Lab: `labs/week_3_finetuning.ipynb`
-- Readings: [HuggingFace PEFT Documentation](https://huggingface.co/docs/peft), [HuggingFace Course](https://huggingface.co/course), [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)
-
-### Week 4 – LLMs in Data Science
-- Slides: `slides/week_4_data_science.tex`
-- Lab: `labs/week_4_llm_ds.ipynb`
-- Readings: [OpenAI Cookbook (Tabular Examples)](https://github.com/openai/openai-cookbook), [PandasAI](https://github.com/gventuri/pandas-ai), [Code Interpreter in the Wild](https://arxiv.org/abs/2310.01228)
-
-### Week 5 – Retrieval-Augmented Generation
-- Slides: `slides/week_5_rag.tex`
-- Lab: `labs/week_5_rag.ipynb`
-- Readings: [OpenAI Embeddings Guide](https://platform.openai.com/docs/guides/embeddings), [Supabase pgvector RAG Tutorial](https://supabase.com/blog/openai-embeddings-postgres-vector), [LangChain Question Answering Guide](https://python.langchain.com/docs/use_cases/question_answering/)
-
-### Week 6 – Mini-Project Sprint
-- Slides: `slides/week_6_project.tex`
-- Lab: `labs/week_6_project.ipynb`
-- Readings: [OpenAI Cookbook](https://github.com/openai/openai-cookbook), [HuggingFace PEFT Examples](https://huggingface.co/docs/peft), [LangChain Documentation](https://python.langchain.com/)
 
 ---
 
