@@ -1072,28 +1072,59 @@ The neural network learns the weights of the connections to optimize its predict
 
 \section{Ecosystem and Access}
 
-\begin{frame}{Where to Get Models}
-  \textbf{Major providers and models}
+% =========================
+% Slide 1 — Hosted APIs
+% =========================
+\begin{frame}{Where to Get Models (Hosted APIs)}
+  \vspace{-0.3em}
+  \textbf{Major providers (managed, pay-per-use; fast start)}
   \begin{center}
-      \begin{tabular}{@{}lll@{}}
-        \toprule
-        Provider & Example Models & Access \\
-        \midrule
-        OpenAI & GPT-3.5, GPT-4o & Hosted API \\
-        Anthropic & Claude 3 & Hosted API \\
-        Meta & LLaMA 2/3 & Open weights \\
-        Mistral & Mixtral, Mistral 7B & Open weights \\
-        HuggingFace & Falcon, Phi-2, etc. & Hub + Transformers \\
-        \bottomrule
-      \end{tabular}
-    \end{center}
+    \begin{tabular}{@{}lll@{}}
+      \toprule
+      Provider & Example Models (2025) & Access \\
+      \midrule
+      OpenAI & o4-mini, o3, GPT-4o & Hosted API (reasoning, vision) \\
+      Google DeepMind & Gemini 2.5 Pro / Flash & Gemini API (free tier + paid) \\
+      Anthropic & Claude Sonnet 4.5 & Claude API / Console \\
+      xAI & Grok-4, Grok-3 & API (OpenAI-compatible) \\
+      % (Optional) Cohere & Command R+ & Hosted API (RAG/tool use) \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
 
-      \textbf{Choosing a path}
-      \begin{itemize}
-        \item Hosted APIs: fast start, managed infrastructure, pay per token.
-        \item Open weights: more control, but you manage serving, fine-tuning, and safety layers.
-      \end{itemize}
-    
+  \vspace{0.6em}
+  \textbf{When to choose}
+  \begin{itemize}
+    \item Minimal ops, latest frontier models, strong tooling \& SLAs.
+    \item Cons: recurring cost, data governance/contracts, rate limits.
+  \end{itemize}
+\end{frame}
+
+% =========================
+% Slide 2 — Open Weights & Hubs
+% =========================
+\begin{frame}{Where to Get Models (Open Weights \& Hubs)}
+  \vspace{-0.3em}
+  \textbf{Open models (self-host or use hosted endpoints)}
+  \begin{center}
+    \begin{tabular}{@{}lll@{}}
+      \toprule
+      Provider & Example Models (2025) & Access \\
+      \midrule
+      Meta & Llama 3.1, Llama 4 (Scout/Maverick) & Open weights (license) \\
+      Mistral & Mistral Large/Medium/Small, Pixtral & Open weights \& Mistral API \\
+      Microsoft & Phi-4, Phi-4-reasoning & Open weights (HF) \\
+      Hugging Face Hub & Falcon, Mixtral, Phi, etc. & Hub + Inference API/Endpoints \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+
+  \vspace{0.6em}
+  \textbf{When to choose}
+  \begin{itemize}
+    \item Control, on-prem/privacy, cost efficiency at scale.
+    \item Cons: you manage serving, scaling, evals, safety layers.
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Calling an API}
