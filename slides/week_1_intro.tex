@@ -240,95 +240,7 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{LLM Model Timeline (2000--2024)}
-  \centering
-  \colorlet{colDec}{AMU_acc1!30}
-  \colorlet{colEnc}{AMU_acc5!85}
-  \colorlet{colED}{AMU_lt2!95}
-  \colorlet{colNon}{AMU_acc4!85}
 
-  \begin{tikzpicture}[>=Stealth, thick]
-    \tikzset{event/.style={draw=AMU_dk1, rounded corners=2pt, inner xsep=4pt, inner ysep=2pt, font=\footnotesize, align=center}}
-
-    % Baseline: dotted before 2017, solid afterwards
-    \draw[dotted, AMU_dk2!95!AMU_lt1] (0,0) -- (2.6,0);
-    \draw[->, AMU_acc1] (2.6,0) -- (10,0);
-
-    % Ticks and labels
-    \foreach \x/\label in {
-      0/{$\sim$2000},
-      2.6/2013,
-      3.8/2017,
-      4.6/2018,
-      5.4/2019,
-      6.2/2020,
-      7.0/2021,
-      7.8/2022,
-      8.6/2023,
-      9.4/2024
-    }{
-      \draw (\x,0) -- (\x,0.18);
-      \node[below=2pt, font=\scriptsize] at (\x,0) {\label};
-    }
-
-    % Events
-    % Non-transformer
-    \draw (0,0) -- (0,0.9);
-    \node[event, fill=colNon, anchor=south] at (0,0.9) {Bag-of-words};
-
-    \draw (2.6,0) -- (2.6,1.2);
-    \node[event, fill=colNon, anchor=south] at (2.6,1.2) {word2vec};
-
-    \draw (3.8,0) -- (3.8,+0.9);
-    \node[event, fill=colNon, anchor=north] at (3.8,+0.9) {Attention};
-
-    % Encoder-only
-    \draw (4.5,0) -- (4.5,1.1);
-    \node[event, fill=colEnc, anchor=south] at (4.5,1.1) {BERT};
-
-    \draw (5.5,0) -- (5.5,2.25);
-    \node[event, fill=colEnc, anchor=south] at (5.5,2.25) {DistilBERT};
-
-
-    \draw (5.3,0) -- (5.3,1.7);
-    \node[event, fill=colEnc, anchor=south] at (5.3,1.7) {RoBERTa};
-
-    
-    % Decoder-only
-    \draw (4.8,0) -- (4.8,-1.3);
-    \node[event, fill=colDec, anchor=north] at (4.8,-1.3) {GPT};
-
-    \draw (5.4,0) -- (5.4,-1.1);
-    \node[event, fill=colDec, anchor=south] at (5.4,-1.1) {GPT-2};
-
-    \draw (6.2,0) -- (6.2,-1.8);
-    \node[event, fill=colDec, anchor=south] at (6.2,-1.8) {GPT-3};
-
-    \draw (8.4,0) -- (8.4,1.6);
-    \node[event, fill=colDec, anchor=south] at (8.4,1.6) {ChatGPT};
-
-    \draw (8.9,0) -- (8.9,1.0);
-    \node[event, fill=colDec, anchor=south] at (8.9,1.0) {GPT-4};
-
-    % Encoder-decoder
-    \draw (6.4,0) -- (6.4,1.0);
-    \node[event, fill=colED, anchor=north] at (6.4,1.0) {T5};
-
-    \draw (7.0,0) -- (7.0,1.0);
-    \node[event, fill=colED, anchor=south] at (7.0,1.0) {Switch};
-
-    \draw (8.3,0) -- (8.3,-0.8);
-    \node[event, fill=colED, anchor=north] at (8.3,-0.8) {Flan-T5};
-
-    % Legend
-    \begin{scope}[shift={(0,-2.2)}]
-      \node[event, fill=colDec] at (1.6,0) {\scriptsize Decoder-only};
-      \node[event, fill=colEnc] at (4.8,0) {\scriptsize Encoder-only};
-      \node[event, fill=colED] at (8.0,0) {\scriptsize Encoder--decoder};
-      \node[event, fill=colNon] at (11.2,0) {\scriptsize Non-transformer models};
-    \end{scope}
-  \end{tikzpicture}
-\end{frame}
 
 
 \begin{frame}{What is a Large Language Model?}
@@ -1021,7 +933,95 @@ The neural network learns the weights of the connections to optimize its predict
   \end{tikzpicture}
 \end{frame}
 
+\begin{frame}{LLM Model Timeline (2000--2024)}
+  \centering
+  \colorlet{colDec}{AMU_acc1!30}
+  \colorlet{colEnc}{AMU_acc5!85}
+  \colorlet{colED}{AMU_lt2!95}
+  \colorlet{colNon}{AMU_acc4!85}
 
+  \begin{tikzpicture}[>=Stealth, thick]
+    \tikzset{event/.style={draw=AMU_dk1, rounded corners=2pt, inner xsep=4pt, inner ysep=2pt, font=\footnotesize, align=center}}
+
+    % Baseline: dotted before 2017, solid afterwards
+    \draw[dotted, AMU_dk2!95!AMU_lt1] (0,0) -- (2.6,0);
+    \draw[->, AMU_acc1] (2.6,0) -- (10,0);
+
+    % Ticks and labels
+    \foreach \x/\label in {
+      0/{$\sim$2000},
+      2.6/2013,
+      3.8/2017,
+      4.6/2018,
+      5.4/2019,
+      6.2/2020,
+      7.0/2021,
+      7.8/2022,
+      8.6/2023,
+      9.4/2024
+    }{
+      \draw (\x,0) -- (\x,0.18);
+      \node[below=2pt, font=\scriptsize] at (\x,0) {\label};
+    }
+
+    % Events
+    % Non-transformer
+    \draw (0,0) -- (0,0.9);
+    \node[event, fill=colNon, anchor=south] at (0,0.9) {Bag-of-words};
+
+    \draw (2.6,0) -- (2.6,1.2);
+    \node[event, fill=colNon, anchor=south] at (2.6,1.2) {word2vec};
+
+    \draw (3.8,0) -- (3.8,+0.9);
+    \node[event, fill=colNon, anchor=north] at (3.8,+0.9) {Attention};
+
+    % Encoder-only
+    \draw (4.5,0) -- (4.5,1.1);
+    \node[event, fill=colEnc, anchor=south] at (4.5,1.1) {BERT};
+
+    \draw (5.5,0) -- (5.5,2.25);
+    \node[event, fill=colEnc, anchor=south] at (5.5,2.25) {DistilBERT};
+
+
+    \draw (5.3,0) -- (5.3,1.7);
+    \node[event, fill=colEnc, anchor=south] at (5.3,1.7) {RoBERTa};
+
+    
+    % Decoder-only
+    \draw (4.8,0) -- (4.8,-1.3);
+    \node[event, fill=colDec, anchor=north] at (4.8,-1.3) {GPT};
+
+    \draw (5.4,0) -- (5.4,-1.1);
+    \node[event, fill=colDec, anchor=south] at (5.4,-1.1) {GPT-2};
+
+    \draw (6.2,0) -- (6.2,-1.8);
+    \node[event, fill=colDec, anchor=south] at (6.2,-1.8) {GPT-3};
+
+    \draw (8.4,0) -- (8.4,1.6);
+    \node[event, fill=colDec, anchor=south] at (8.4,1.6) {ChatGPT};
+
+    \draw (8.9,0) -- (8.9,1.0);
+    \node[event, fill=colDec, anchor=south] at (8.9,1.0) {GPT-4};
+
+    % Encoder-decoder
+    \draw (6.4,0) -- (6.4,1.0);
+    \node[event, fill=colED, anchor=north] at (6.4,1.0) {T5};
+
+    \draw (7.0,0) -- (7.0,1.0);
+    \node[event, fill=colED, anchor=south] at (7.0,1.0) {Switch};
+
+    \draw (8.3,0) -- (8.3,-0.8);
+    \node[event, fill=colED, anchor=north] at (8.3,-0.8) {Flan-T5};
+
+    % Legend
+    \begin{scope}[shift={(0,-2.2)}]
+      \node[event, fill=colDec] at (1.6,0) {\scriptsize Decoder-only};
+      \node[event, fill=colEnc] at (4.8,0) {\scriptsize Encoder-only};
+      \node[event, fill=colED] at (8.0,0) {\scriptsize Encoder--decoder};
+      \node[event, fill=colNon] at (11.2,0) {\scriptsize Non-transformer models};
+    \end{scope}
+  \end{tikzpicture}
+\end{frame}
 
 \begin{frame}{Further Reading on Transformers}
   \begin{itemize}
@@ -1167,15 +1167,21 @@ print(resp.choices[0].message.content)
 \end{frame}
 
 \begin{frame}{Further Reading}
-  \begin{tabular}{@{}lp{6.8cm}@{}}
-    Concept & Reference / Motivation \\
+  \vspace{-0.4em}
+  \begin{tabular}{@{}p{3.8cm}p{7.8cm}@{}}
+    \toprule
+    \textbf{Concept} & \textbf{Reference / Why it matters} \\
     \midrule
-    Introduction to LLM & \href{https://learn.deeplearning.ai/courses/how-transformer-llms-work} Main components of LLM architecture. \\
-    Transformer & \href{https://jalammar.github.io/illustrated-transformer/}{Jay Alammar, Illustrated Transformer} -- visual intuition. \\
-    Tokenization & \href{https://github.com/openai/tiktoken}{OpenAI tiktoken repo} -- understand token counts and cost. \\
-    Training & \href{https://arxiv.org/abs/2005.14165}{GPT-3 Paper} -- scaling laws and setup. \\
-    APIs & \href{https://platform.openai.com/docs}{OpenAI Documentation} -- production usage patterns. \\
-    Fine-tuning & \href{https://huggingface.co/course}{HuggingFace Course} -- hands-on tutorials and tooling. \\
+    LLM overview & \href{https://learn.deeplearning.ai/courses/how-transformer-llms-work}{How Transformer LLMs Work (deeplearning.ai)} — concise intro to components. \\
+    Transformer basics & \href{https://jalammar.github.io/illustrated-transformer/}{The Illustrated Transformer (Jay Alammar)} — visual intuition for attention. \\
+    Tokenization & \href{https://github.com/openai/tiktoken}{OpenAI \texttt{tiktoken}}; \href{https://huggingface.co/docs/tokenizers/index}{HF Tokenizers} — counts, costs, subwords. \\
+    Attention math & \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need (Vaswani et al., 2017)} — original paper. \\
+    %Scaling laws & \href{https://arxiv.org/abs/2005.14165}{GPT-3 (Brown et al., 2020)}; \href{https://arxiv.org/abs/2203.15556}{Chinchilla (Hoffmann et al., 2022)} — compute/data trade-offs. \\
+    APIs (OpenAI) & \href{https://platform.openai.com/docs}{OpenAI Platform Docs} — endpoints, auth, safety. \\
+    APIs (Gemini) & \href{https://ai.google.dev/gemini-api/docs}{Gemini API Docs} — free tier + multimodal. \\
+    APIs (Claude) & \href{https://docs.anthropic.com}{Anthropic Claude Docs} — reasoning, tool use. \\
+    APIs (Grok) & \href{https://x.ai/api}{xAI Grok API} — OpenAI-compatible endpoints. \\
+     \bottomrule
   \end{tabular}
 \end{frame}
 \end{document}
