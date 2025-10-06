@@ -300,6 +300,7 @@
   \end{itemize}
 \end{frame}
 
+\iffalse
 \begin{frame}{Core Concepts}
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.53\linewidth}
@@ -325,7 +326,7 @@
     \end{column}
   \end{columns}
 \end{frame}
-
+\fi
 
 
 
@@ -659,70 +660,6 @@ The neural network learns the weights of the connections to optimize its predict
 
 \section{Recurrent Neural Networks (RNNs)}
 
-
-\begin{frame}{Neural Machine Translation with Encoder-Decoder RNN}
-  \centering
-  \begin{tikzpicture}[
-    box/.style={rectangle, draw, rounded corners=2pt, minimum height=0.8cm, minimum width=1.5cm, align=center, font=\small},
-    inputbox/.style={box, fill=blue!10},
-    outputbox/.style={box, fill=green!10},
-    encoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=cyan!20},
-    decoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=pink!20},
-    label/.style={font=\small, align=left, text width=2cm}
-  ]
-
-    % Input sequence
-    \node[inputbox] (i1) at (1,3.5) {I};
-    \node[inputbox] (i2) at (3,3.5) {love};
-    \node[inputbox] (i3) at (5,3.5) {robots};
-
-   
-
-    % Encoder
-    \node[encoderbox, fill=AMU_acc5!80] (enc) at (3,1.5) {
-      \textbf{Encoder (RNN)}\\
-      \small Task: representing language
-    };
-  
-    % Decoder
-    \node[decoderbox,  fill=AMU_acc6!60] (dec) at (3,-0.5) {
-      \textbf{Decoder (RNN)}\\
-      \small Task: generating language
-    };
-   
-
-    % Arrows from encoder to decoder
-    \draw[dotted] (enc.south west) -- (dec.north west);
-    \draw[dotted] (enc.south east) -- (dec.north east);
-    \draw[<->] (enc.south) -- (dec.north) node[midway, right] {}; % Context connection
-
-    % Output sequence
-    \node[outputbox] (o1) at (1,-2.5) {Ich};
-    \node[outputbox] (o2) at (3,-2.5) {liebe};
-    \node[outputbox] (o3) at (5,-2.5) {Roboter};
-
- % Arrows from input to encoder
-    \draw[->] (i1) -- (enc);
-    \draw[->] (i2) -- (enc);
-    \draw[->] (i3) -- (enc);
-
-    % Arrows from decoder to output
-    \draw[->] (dec) -- (o1);
-    \draw[->] (dec) -- (o2);
-    \draw[->] (dec) -- (o3);
-
-    % Labels
-    \node[label, left=0.5cm of i1.west] {Input\\sequence};
-    \node[label, left=0.5cm of o1.west] {Output\\sequence};
-
-    % Neural Machine Translation label
-    \node[rotate=90, label, anchor=south] at (-1.5,1) {Neural\\machine\\translation};
-
-    % Dotted border around encoder-decoder
-    \draw[dotted] ([xshift=-0.5cm,yshift=0.5cm]enc.north west) rectangle ([xshift=0.5cm,yshift=-0.5cm]dec.south east);
-
-  \end{tikzpicture}
-\end{frame}
 
 
 \begin{frame}{Motivation: Sequential Data}
@@ -1143,26 +1080,8 @@ print(resp.choices[0].message.content)
   \end{lstlisting}
 \end{frame}
 
-\begin{frame}{Token Economics}
-  \begin{itemize}
-    \item Providers charge per 1,000 tokens (roughly 750 words). Both input (prompt) and output tokens count.
-    \item Example: if input = 500 tokens and output = 200 tokens at $\$0.002$ per 1K tokens, cost $\approx \$0.0014$.
-    \item Track usage: log prompts, responses, and costs for transparency and budgeting.
-  \end{itemize}
-\end{frame}
-
 
 \section{Wrap-Up}
-
-\begin{frame}{Key Takeaways}
-  \begin{itemize}
-    \item LLMs model $P(x_t \mid x_{<t})$ and rely on tokenization, embeddings, and Transformers to operate.
-    \item Self-attention + positional encodings enable parallel processing and long-range context.
-    \item Training spans massive pretraining, then alignment (SFT, RLHF, DPO) for safety and usefulness.
-    \item Real-world use demands awareness of strengths, limitations, providers, and cost models.
-    \item Lab will reinforce these concepts through hands-on tokenization and API exercises.
-  \end{itemize}
-\end{frame}
 
 \begin{frame}{Further Reading}
   \vspace{-0.4em}
