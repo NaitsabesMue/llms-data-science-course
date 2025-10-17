@@ -1,0 +1,328 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{beamerthemeAMU}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Listing style for code snippets
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
+
+\title{Large Language Models in Data Science}
+\subtitle{Week 2: Hugging Face \& Transformers --- Using Pretrained Models}
+\author{Sebastian Mueller}
+\institute{Aix-Marseille Universit\'e}
+\date{2025-2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Session Overview}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.55\linewidth}
+      \textbf{Lecture (1.5h)}
+      \begin{enumerate}
+        \item HF ecosystem: Hub and Transformers
+        \item Installing and authenticating
+        \item Model selection and checkpoints
+        \item Pipelines for quick inference
+        \item Tokenizers, models, and generation APIs
+        \item Devices, memory, and caching
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \textbf{Lab (1.5h)}
+      \begin{itemize}
+        \item Run pipelines for common NLP tasks
+        \item Manual tokenization + forward pass
+        \item Batch over a dataset with \texttt{datasets}
+        \item Pin and cache a specific checkpoint
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{Hugging Face Ecosystem}
+
+\begin{frame}{What is Hugging Face?}
+  \begin{itemize}
+    \item \textbf{Hub (Definition)}: A public registry of \emph{models}, \emph{datasets}, and \emph{spaces}. Each repo has a model card with usage, license, and metadata.
+    \item \textbf{Why the Hub?} It centralizes discovery and reuse so we do not start from scratch.
+    \item \textbf{Transformers (Definition)}: A Python library that downloads checkpoints from the Hub and provides high-level and low-level APIs for inference and training.
+  \item \textbf{Datasets / Tokenizers (Definition)}: Libraries for efficient data loading and fast tokenization used by Transformers.
+    \item \textbf{Focus today}: \emph{Using pretrained models} safely and reproducibly (not contributing or fine-tuning yet).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Install and Authenticate}
+  \begin{itemize}
+    \item \textbf{Goal}: Set up the minimal toolchain to run models locally or via hosted inference.
+    \item \textbf{Install (Definition)}: Add the client libraries to your Python environment.
+    \item \textbf{Authentication token (Definition)}: A personal access token that grants read access to private/gated repos and hosted endpoints.
+    \item \textbf{Why authenticate?} Some checkpoints are gated due to license or size; hosted APIs require identifying the caller.
+    \item \textbf{Cache (Definition)}: Local folder for downloaded configs/tokenizers/weights; defaults to \texttt{~/.cache/huggingface}.
+    \item \textbf{Why cache?} Avoid re-downloading and enable offline use. Configure via \texttt{HF\_HOME} or \texttt{TRANSFORMERS\_CACHE}.
+  \end{itemize}
+\end{frame}
+
+\section{Models and Checkpoints}
+
+\begin{frame}{Model Selection on the Hub}
+  \begin{itemize}
+    \item \textbf{Model card (Definition)}: A README describing task(s), license, intended use, and usage examples.
+    \item \textbf{Why read it?} Ensures the checkpoint matches your task and license constraints.
+    \item \textbf{Task tags (Definition)}: Standard labels like \texttt{text-classification}, \texttt{summarization}, \texttt{text-generation}, \texttt{embeddings}.
+   \item Prefer active repos with clear evals and permissive licenses where appropriate.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Checkpoints \& Revisions: Ensuring Reproducibility}
+  \begin{block}{The Problem: Your results might change overnight}
+    If you just use a model name like \texttt{"gpt2"}, you're getting the \emph{latest} version. If the author updates it, your experiment from last week may produce different results.
+  \end{block}
+
+  \begin{columns}[T]
+    \begin{column}{0.5\linewidth}
+      \textbf{Checkpoint (Definition)}
+      \begin{itemize}
+        \item A specific trained model release (e.g., `meta-llama/Llama-2-7b-chat-hf`).
+      \end{itemize}
+      
+      \textbf{Revision (Definition)}
+      \begin{itemize}
+        \item A \emph{specific version} of that model's checkpoint files, identified by a unique ID (a git commit hash).
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.5\linewidth}
+      \textbf{The Solution: Pin Your Revision!}
+      \begin{itemize}
+        \item \textbf{Why pin?} It guarantees you are using the \textbf{exact same} model files, ensuring your work is reproducible across machines and over time.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Model Safety: Code Execution Risks}
+    \begin{block}{The Problem: Models from the Hub are code from the internet!}
+    Loading a model isn't just loading numbers; sometimes it can execute Python code. You need to know when and why this is happening.
+    \end{block}
+    
+    \begin{columns}[T]
+    \begin{column}{0.5\linewidth}
+        \begin{alertblock}{Risk: Custom Code }
+            \begin{itemize}
+                \item Some models require extra Python code from the repo to work.
+                \item When you set \texttt{trust\_remote\_code=True}, you allow \texttt{transformers} to download and \textbf{run that code}.
+                \item \textbf{Be careful!} Only do this if you trust the author.
+            \end{itemize}
+        \end{alertblock}
+    \end{column}
+    \begin{column}{0.5\linewidth}
+        \begin{exampleblock}{Solution: Safe Tensors}
+             \begin{itemize}
+                \item The old (\texttt{pytorch\_model.bin})is a known security risk that can execute code.
+                \item \textbf{Safetensors} (\texttt{.safetensors}) is a new format that \textbf{cannot execute code}. It only contains the model's numbers (weights).
+               \end{itemize}
+        \end{exampleblock}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\section{Fast Path: Pipelines}
+
+\begin{frame}[fragile]{Pipelines: One-Liners for Common Tasks}
+ \begin{itemize}
+    \item \textbf{Pipeline (Definition)}: A preconfigured wrapper that applies the right tokenizer, model, and postprocessing for a task.
+    \item \textbf{Why use it?} Fast baseline and fewer moving parts for first runs.
+    \item \textbf{Why these?} They cover common evaluation-style tasks: labeling, summarizing, and embeddings.
+  \end{itemize} 
+  \vspace{0.5em}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Pipelines: Examples}
+
+  \begin{lstlisting}[language=Python]
+from transformers import pipeline
+
+# Sentiment analysis
+clf = pipeline("text-classification",
+               model="distilbert-base-uncased-finetuned-sst-2-english")
+clf(["I love this!", "This is terrible..."])
+
+# Masked language modeling (fill-mask)
+mlm = pipeline("fill-mask", model="bert-base-uncased")
+mlm("Paris is the [MASK] of France.")
+
+# Text generation
+gen = pipeline("text-generation", model="gpt2")
+gen("Once upon a time", max_new_tokens=40, do_sample=True, temperature=0.8)
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Other Useful Pipelines}
+  \begin{lstlisting}[language=Python]
+# Zero-shot classification
+zsc = pipeline("zero-shot-classification",
+               model="facebook/bart-large-mnli")
+zsc("The stock rallied 5%.", candidate_labels=["finance", "sports"]) 
+
+# Summarization
+summ = pipeline("summarization", model="facebook/bart-large-cnn")
+summ(long_article_text, max_length=128)
+
+# Embeddings (feature extraction)
+emb = pipeline("feature-extraction", model="sentence-transformers/all-MiniLM-L6-v2")
+vec = emb("A short sentence.", pooling="mean", normalize=True)
+  \end{lstlisting}
+\end{frame}
+
+\section{Tokenizers and Models}
+
+\begin{frame}[fragile]{Manual Tokenization and Forward Pass}
+  \begin{itemize}
+    \item \textbf{Tokenizer (Definition)}: Converts text to token IDs and attention masks that the model understands.
+    \item \textbf{Model head (Definition)}: A task-specific layer (e.g., classification) on top of a base encoder/decoder.
+    \item \textbf{Why manual mode?} More control over batching, padding, truncation, and outputs.
+    \item \texttt{AutoTokenizer} / \texttt{AutoModelFor\*} select correct classes from the checkpoint config; inspect \texttt{config} for labels and limits.
+  \end{itemize}
+\end{frame}
+\begin{frame}[fragile]{Manual Tokenization and Forward Pass - Python example}
+  \begin{lstlisting}[language=Python]
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+name = "distilbert-base-uncased-finetuned-sst-2-english"
+tok = AutoTokenizer.from_pretrained(name)
+model = AutoModelForSequenceClassification.from_pretrained(name)
+
+batch = tok(["I love this!", "This is terrible..."],
+            padding=True, truncation=True, return_tensors="pt")
+with torch.no_grad():
+    out = model(**batch)
+probs = out.logits.softmax(-1)
+probs
+  \end{lstlisting}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Generation with \texttt{generate()}}
+  \begin{lstlisting}[language=Python]
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+name = "gpt2"
+tok = AutoTokenizer.from_pretrained(name)
+lm = AutoModelForCausalLM.from_pretrained(name)
+
+prompt = "In data science, transformers are"
+inputs = tok(prompt, return_tensors="pt")
+outputs = lm.generate(**inputs,
+                      max_new_tokens=64,
+                      do_sample=True,
+                      temperature=0.7,
+                      top_p=0.9,
+                      repetition_penalty=1.1)
+print(tok.decode(outputs[0], skip_special_tokens=True))
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}{Decoding: tuning generation parameters}
+  \begin{itemize}
+    \item \textbf{Decoding (Definition)}: Strategy to choose next tokens (sampling vs. beam search).
+    \item \textbf{Why tune it?} Balance creativity vs. determinism and mitigate repetition.
+    \item \textbf{max\_new\_tokens}: Upper bound on generated tokens beyond the prompt. Higher = longer outputs; set a cap to avoid runaways.
+    \item \textbf{temperature}: Scales logits before sampling. Lower (e.g., 0.2) = conservative; higher (e.g., 0.8) = more diverse.
+    \item \textbf{top\_p} (nucleus): Sample from the smallest set whose cumulative prob \(\ge p\). Lower p = safer, fewer risky tokens.
+    \item \textbf{top\_k}: Sample from top-k probable tokens. Lower k = safer; can be combined with \texttt{top\_p}.
+     \item \textbf{repetition\_penalty}: >1.0 discourages repeating tokens/phrases (e.g., 1.05–1.2). Too high can harm fluency.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Sampling vs. Beam Search}
+  \begin{itemize}
+    \item \textbf{Sampling (Definition)}: At each step, draw the next token at random from a truncated distribution (controlled by \texttt{temperature}, \texttt{top\_p}, \texttt{top\_k}).
+    \item \textbf{Beam search (Definition)}: Keep the top \(N\) partial sequences (\emph{beams}) by cumulative log-probability; expand each beam and keep the best until stopping.
+    \item \textbf{Determinism}: Sampling is non-deterministic (varies run-to-run); beam search is deterministic for fixed settings.
+    \item \textbf{Diversity}: Sampling is more diverse/creative; beam search is safer but can be generic or repetitive.
+    \item \textbf{Speed}: Sampling is fast; beam search is slower, roughly proportional to \texttt{num\_beams}.
+    \item \textbf{Controls}: Sampling uses \texttt{temperature}, \texttt{top\_p}, \texttt{top\_k}. Beam search uses \texttt{num\_beams}, \texttt{length\_penalty}, \texttt{early\_stopping}.
+    \item \textbf{When to use}: Creative writing/brainstorming \(\rightarrow\) sampling. Single best answer (e.g., translation/QA) \(\rightarrow\) greedy/beam search.
+  \end{itemize}
+\end{frame}
+
+\section{Devices and Performance}
+
+\begin{frame}[fragile]{Devices, Dtypes, and Memory}
+  \begin{itemize}
+    \item \textbf{Device map (Definition)}: Automatic placement of model layers across CPU/GPU/MPS via Accelerate.
+    \item \textbf{Why?} Fit larger models and use available accelerators without manual plumbing.
+    \item \textbf{Dtype (Definition)}: Numeric precision used for weights and activations (e.g., \texttt{float32}, \texttt{float16}).
+    \item \textbf{Why lower precision?} Save memory and increase throughput with minimal quality drop.
+    \item \textbf{Quantization (Definition)}: Load weights in 8/4-bit (\texttt{bitsandbytes}) to further reduce memory.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Caching, Offline, and Reproducibility}
+  \begin{itemize}
+    \item \textbf{Cache dirs (Definition)}: \texttt{TRANSFORMERS\_CACHE}, \texttt{HF\_HOME} control where files are stored.
+    \item \textbf{Why set them?} Keep caches on faster disks or shared locations.
+    \item \textbf{Offline mode (Definition)}: \texttt{HF\_HUB\_OFFLINE=1} forces use of local cache only.
+    \item \textbf{Why offline?} Stable experiments and air-gapped environments.
+    \item Pin exact versions with \texttt{revision=} and store \texttt{model.config.to\_dict()} with results for traceability.
+  \end{itemize}
+\end{frame}
+
+
+\section{Inference API (Optional)}
+
+\begin{frame}[fragile]{Hosted Inference with \texttt{InferenceClient}}
+  \begin{lstlisting}[language=Python]
+from huggingface_hub import InferenceClient
+
+client = InferenceClient(
+    model="facebook/bart-large-cnn", token=os.getenv("HF_TOKEN")
+)
+summary = client.summarization("""Long article text here...""")
+print(summary)
+  \end{lstlisting}
+  \begin{itemize}
+    \item \textbf{Inference API (Definition)}: Managed endpoints for common tasks; billable and rate-limited.
+    \item \textbf{Why use it?} Zero local setup for quick demos or when hardware is unavailable.
+  \end{itemize}
+\end{frame}
+
+\section{Takeaways}
+
+\begin{frame}{Key Takeaways}
+  \begin{itemize}
+    \item Start with \textbf{pipelines} for quick wins; drop to tokenizers/models for control.
+    \item Pick checkpoints by \textbf{task, license, and metrics}; pin with \texttt{revision=}.
+    \item Use \textbf{device\_map} and dtypes to fit memory and speed constraints.
+    \item Cache wisely; enable offline mode for reproducibility.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Glossary Cheat Sheet}
+  \begin{itemize}
+    \item \textbf{Hub}: Registry of models/datasets/spaces with model cards.
+    \item \textbf{Transformer}: Library for loading checkpoints and running tasks.
+    \item \textbf{Checkpoint}: Released weights/config for a model; pin with \texttt{revision=}.
+    \item \textbf{Pipeline}: One-line task runner that bundles tokenizer+model.
+    \item \textbf{Tokenizer}: Maps text to token IDs and attention masks.
+    \item \textbf{Device map}: Automatic layer placement across CPU/GPU/MPS.
+    \item \textbf{Dtype/Quantization}: Numeric precision and compressed weight formats.
+    \item \textbf{Dataset}: Table-like data with fast transforms and batching.
+    \item \textbf{Cache/Offline}: Local storage and network-free operation.
+  \end{itemize}
+\end{frame}
+
+\end{document}

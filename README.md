@@ -77,6 +77,11 @@ Materials and project themes will be released progressively over the semester. S
 - Lab: `labs/week_1_tokenization.ipynb`
 - Readings: [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/), [OpenAI GPT Models Documentation](https://platform.openai.com/docs/guides/gpt), [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
 
+### Week 2 – Hugging Face & Transformers: Using Pretrained Models
+- Slides: `slides/week_2_huggingface.tex`
+- Lab: `labs/week_2_huggingface_basics.ipynb`
+- Docs: [Transformers Overview](https://huggingface.co/docs/transformers/en/index), [Datasets](https://huggingface.co/docs/datasets), [Hugging Face Hub](https://huggingface.co/docs/hub)
+
 
 
 ---
