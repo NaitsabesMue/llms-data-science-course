@@ -82,6 +82,11 @@ Materials and project themes will be released progressively over the semester. S
 - Lab: `labs/week_2_huggingface_basics.ipynb`
 - Docs: [Transformers Overview](https://huggingface.co/docs/transformers/en/index), [Datasets](https://huggingface.co/docs/datasets), [Hugging Face Hub](https://huggingface.co/docs/hub)
 
+### Week 3 – Effective LLM Use: Coding, Research, Ideation, First Analysis
+- Slides: `slides/week_3_effective_llm_use.tex`
+- Lab: `labs/week_3_effective_llm_use.ipynb`
+- Notes: The lab uses the Gemini API. Set an environment variable `GEMINI_API_KEY` (e.g., add it to `.env`) and install `google-generativeai` before running.
+
 
 
 ---

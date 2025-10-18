@@ -1,0 +1,186 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{beamerthemeAMU}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
+
+\title{Large Language Models in Data Science}
+\subtitle{Week 3: Prompting for Effective LLM Use}
+\author{Sebastian Mueller}
+\institute{Aix-Marseille Universit\'e}
+\date{2025-2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Session Overview}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.55\linewidth}
+      \textbf{Lecture (1.5h)}
+      \begin{enumerate}
+        \item Clear rules for prompting
+        \item Roles: system vs. user (with example)
+        \item Separate data from instructions
+        \item Format-controlled outputs (JSON/code)
+        \item Two-step prompting (prompt-writer)
+        \item Coding, research, ideation patterns
+        \item Risks, guardrails, references
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \textbf{Lab (1.5h)}
+      \begin{itemize}
+        \item Gemini 1.5 Flash in notebooks
+        \item Role prompting: see outcome change
+        \item Structured prompts and JSON parsing
+        \item Generate and run small EDA code
+        \item Optional: search+summarize scaffold
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{Why Prompting Matters}
+
+\begin{frame}{Prompting Makes a Big Difference}
+  \begin{itemize}
+    \item Clarity and structure often outweigh model choice for many tasks.
+    \item A clear goal and acceptance criteria lead to better outputs.
+    \item Save prompts and parseable outputs to reproduce analyses.
+  \end{itemize}
+\end{frame}
+
+
+\section{Prompting}
+
+\begin{frame}{Clear Rules for Prompting}
+  \begin{itemize}
+    \item \textbf{Be specific}: Ask exactly for what you need; set scope and length.
+    \item \textbf{State role}: Use a system instruction to set role and guardrails.
+    \item \textbf{Separate parts}: Keep instructions, data, and output format distinct.
+    \item \textbf{Format outputs}: Require JSON or fenced code for parsing.
+    \item \textbf{Acceptance criteria}: Provide a checklist; ask the model to self-verify.
+    \item \textbf{Few-shot (minimal)}: One short example can anchor style reliably.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Reusable Prompt Template}
+\begin{lstlisting}[language=Markdown]
+System: You are a senior data scientist.
+Prefer minimal, correct code. Follow the output format exactly.
+
+User:
+- Task: <what to do, be concrete>
+- Context: <one paragraph; optional>
+- Constraints: <libraries, time, memory, safety>
+- Output format: <strict JSON schema or sections>
+- Self-check: Confirm acceptance criteria before finalizing.
+\end{lstlisting}
+\end{frame}
+
+\section{Roles}
+
+\begin{frame}{Roles: System vs. User}
+  \begin{itemize}
+    \item \textbf{System instruction}: Persistent role and guardrails (e.g., "You are a cat.").
+    \item \textbf{User prompt}: The immediate task/question.
+    \item Changing the system instruction can change style, persona, and assumptions.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Role Prompting: Minimal Example}
+\begin{lstlisting}[language=Python]
+import os, google.generativeai as genai
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+PROMPT = "In one sentence, what do you think about mice?"
+
+# No system instruction
+plain = genai.GenerativeModel("gemini-1.5-flash")
+print(plain.generate_content(PROMPT).text)
+
+# System instruction alters tone/persona
+cat = genai.GenerativeModel("gemini-1.5-flash",
+    system_instruction="You are a cat.")
+print(cat.generate_content(PROMPT).text)
+\end{lstlisting}
+\end{frame}
+
+\section{Structure}
+
+\begin{frame}{Separate Data from Instructions}
+  \begin{itemize}
+    \item Keep instructions stable; swap data without changing behavior.
+    \item Use delimiters or fields: \texttt{Instructions: ...} \quad \texttt{Data: <...>}
+    \item Benefits: auditability, reproducibility, safer copy/paste.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Formatting Outputs for Parsing}
+\begin{lstlisting}[language=Markdown]
+System: Return strict JSON with keys {"summary": str, "tags": [str]}.
+User:
+- Instructions: Summarize the text and produce 3 topical tags.
+- Data: <article text here>
+\end{lstlisting}
+\vspace{0.4em}
+\textit{Tip:} Validate with \texttt{json.loads} and ask the model to fix on failure.
+\end{frame}
+
+\section{Patterns}
+
+\begin{frame}{Two-Step Prompting (Prompt-Writer)}
+  \begin{itemize}
+    \item Step 1: Ask the LLM to draft/refine the prompt for your task.
+    \item Step 2: Use the drafted prompt (after personal refining) to run the task (same or different model).
+    \item Useful for clarifying objectives and output format before execution.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Code, Research, Ideation: Quick Patterns}
+  \begin{itemize}
+    \item \textbf{Code}: generate \(\rightarrow\) run \(\rightarrow\) feed results back; ask for tests.
+    \item \textbf{Research}: generate queries \(\rightarrow\) gather snippets \(\rightarrow\) synthesize after verification and add citations.
+    \item \textbf{Ideation}: require 3 distinct strategies with trade-offs and a next step.
+  \end{itemize}
+\end{frame}
+
+
+\section{Risks}
+
+\begin{frame}{Risks and Guardrails}
+  \begin{itemize}
+    \item \textbf{Correctness}: Prefer code+execution; verify with tests.
+    \item \textbf{Safety}: Sandbox code; avoid secrets; pin deps.
+    \item \textbf{Reproducibility}: Save prompts, model names, seeds, outputs.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{References}
+  \begin{itemize}
+    \item Anthropic: Prompt Engineering Interactive Tutorial (thinking step-by-step)
+    \item Anthropic: prompt-eng-interactive-tutorial/06\_Precognition\_Thinking\_Step\_by\_Step.ipynb
+    \item OpenAI: Prompt Engineering Guide
+    \item DeepLearning.AI: Prompt Engineering short course
+    \item Google: Prompting with Gemini (developers site)
+    \item Microsoft: Prompt Engineering Guidelines
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Takeaways}
+  \begin{itemize}
+    \item Clear, structured prompts + role control drive quality.
+    \item Separate instructions/data; require parseable outputs.
+    \item Iterate with two-step prompting before running code.
+  \end{itemize}
+\end{frame}
+
+\end{document}
+
