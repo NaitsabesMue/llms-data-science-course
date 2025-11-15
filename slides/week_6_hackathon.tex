@@ -1,0 +1,234 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{beamerthemeAMU}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
+
+\title{Large Language Models in Data Science}
+\subtitle{Week 6: Hackathon -- Applied LLM Projects}
+\author{Sebastian Mueller}
+\institute{Aix-Marseille Universit\'e}
+\date{2025-2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Session Overview}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.55\linewidth}
+      \textbf{Morning (Hackathon briefing)}
+      \begin{enumerate}
+        \item Recap of course concepts (Weeks 1--5)
+        \item Hackathon rules and grading
+        \item Project scope: what fits into one day
+        \item Team formation and logistics
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \textbf{Full-day Hackathon}
+      \begin{itemize}
+        \item Choose a problem and dataset
+        \item Design an end-to-end LLM / RAG pipeline
+        \item Implement, test, and iterate
+        \item Prepare a short live demo and summary
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{Hackathon Overview}
+
+\begin{frame}{Why a Hackathon?}
+  \begin{itemize}
+    \item Move from \textbf{toy examples} to an \textbf{end-to-end project} in a realistic setting.
+    \item Combine techniques from the whole course: tokenization, embeddings, HF models, prompting, classification, RAG.
+    \item Practice \textbf{teamwork} around LLMs and data: dividing roles, coordinating experiments, merging ideas.
+    \item Experience trade-offs between ambition and scope under strict time constraints.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Evaluation \& Final Grade}
+  \begin{itemize}
+    \item The hackathon is the \textbf{final evaluation} of the course.
+    \item Final score out of 20 is based on four criteria (5 points each), as in the README:
+      \begin{itemize}
+        \item \textbf{Use Case \& Applications (5 pts)}: relevance, originality, potential future usefulness.
+        \item \textbf{Code Cleanliness (5 pts)}: readability, organization, modularity, reproducibility.
+        \item \textbf{Lecture Integration (5 pts)}: use of course concepts (prompting, RAG, embeddings, classification, etc.).
+        \item \textbf{Presentation (5 pts)}: clarity, conciseness, visuals, explanation of design choices.
+      \end{itemize}
+    \item Your hackathon score is your \textbf{official course grade}.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Teams \& Logistics}
+  \begin{itemize}
+    \item Work in groups of \textbf{1 to 5} students (recommended: 3--4).
+    \item Each team produces:
+      \begin{itemize}
+        \item a small but coherent \textbf{project repository or notebook(s)},
+        \item a short \textbf{live demo} of the system (or a recorded run, if needed),
+        \item a \textbf{5--7 minute presentation} covering problem, approach, and lessons learned.
+      \end{itemize}
+    \item Use any combination of tools seen in the course:
+      \begin{itemize}
+        \item Hugging Face, Gemini API, scikit-learn, sentence-transformers, simple RAG stacks.
+      \end{itemize}
+    \item You are encouraged to reuse and adapt code from the labs (with proper structuring and documentation).
+  \end{itemize}
+\end{frame}
+
+\section{Project Guidelines}
+
+\begin{frame}{What Makes a Good Project?}
+  \begin{itemize}
+    \item \textbf{Clear problem statement}: for whom is the system built, and what decision does it help?
+    \item \textbf{Grounded in data}: use real or realistic data relevant to AMU, Marseille, or data science practice.
+    \item \textbf{Course concepts in action}:
+      \begin{itemize}
+        \item thoughtful prompts, embeddings, RAG, or classification models,
+        \item not just a UI wrapped around an API.
+      \end{itemize}
+    \item \textbf{End-to-end story}: ingestion $\rightarrow$ processing / retrieval $\rightarrow$ model $\rightarrow$ output.
+    \item \textbf{Simple but solid}: small scope, but robust, well-structured, and easy to demo.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Scope for One Day}
+  \begin{itemize}
+    \item Aim for a \textbf{minimal viable assistant}, not a full product.
+    \item Prefer:
+      \begin{itemize}
+        \item one or two well-implemented workflows,
+        \item over many incomplete features.
+      \end{itemize}
+    \item Reuse:
+      \begin{itemize}
+        \item lab pipelines (classification, RAG) as starting points,
+        \item prompts and templates tested earlier in the course.
+      \end{itemize}
+    \item Keep infrastructure light:
+      \begin{itemize}
+        \item local notebooks, small datasets, API calls,
+        \item no need for full web deployment if time is short.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Example Project Ideas}
+
+\begin{frame}{Idea 1: AMU Data Science Programme Assistant}
+  \begin{itemize}
+    \item \textbf{Goal}: help prospective or current students explore the MAS / Data Science track at AMU.
+    \item \textbf{Data}:
+      \begin{itemize}
+        \item official programme pages (like those used in the Week 5 lab),
+        \item additional documents: FAQs, course descriptions, internship info.
+      \end{itemize}
+    \item \textbf{Pipeline}:
+      \begin{itemize}
+        \item ingest and chunk web pages / PDFs,
+        \item build a BM25 + embedding index with metadata (campus, year, language),
+        \item use a RAG chain to answer questions about courses, prerequisites, careers.
+      \end{itemize}
+    \item \textbf{Extensions}:
+      \begin{itemize}
+        \item multilingual Q\&A (French / English),
+        \item citations and links back to source sections,
+        \item a small evaluation set of typical student questions.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Idea 2: Data Science EDA Copilot}
+  \begin{itemize}
+    \item \textbf{Goal}: assist a data scientist in exploring a tabular dataset (e.g., churn, housing, or a public Kaggle dataset).
+    \item \textbf{Workflow}:
+      \begin{itemize}
+        \item user provides a CSV and a question (e.g., ``What drives churn in this dataset?''),
+        \item the system generates Python code snippets for plots / tables using prompting techniques from Week 3,
+        \item execute the code, collect results, and ask the LLM to summarise findings in natural language.
+      \end{itemize}
+    \item \textbf{Course concepts}:
+      \begin{itemize}
+        \item prompt templates for code generation and summarisation,
+        \item structured outputs (e.g., JSON with ``steps'', ``code``, ``insights''),
+        \item maybe a simple classification model from Week 4 as a baseline.
+      \end{itemize}
+    \item \textbf{Focus}:
+      \begin{itemize}
+        \item reproducibility (scripts/notebooks can be re-run),
+        \item clear separation between data, code, and LLM outputs.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Idea 3: Student Support Inbox Triage}
+  \begin{itemize}
+    \item \textbf{Goal}: help route incoming student emails to the right service and provide draft replies.
+    \item \textbf{Data}:
+      \begin{itemize}
+        \item a synthetic dataset of student enquiries (motivated by Week 4 intent classification),
+        \item labels such as \texttt{timetable}, \texttt{exam}, \texttt{administrative}, \texttt{internship}, \texttt{other}.
+      \end{itemize}
+    \item \textbf{Pipeline}:
+      \begin{itemize}
+        \item baseline classifier (embeddings + logistic regression or zero-shot classification),
+        \item optional RAG component with a small FAQ corpus,
+        \item LLM prompting to generate a draft response and a recommended action.
+      \end{itemize}
+    \item \textbf{Evaluation}:
+      \begin{itemize}
+        \item accuracy of routing to labels (using a held-out test set),
+        \item qualitative assessment of suggested replies (are they precise and polite?).
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Planning Your Project}
+
+\begin{frame}{Checklist for Today}
+  \begin{itemize}
+    \item \textbf{1. Define the problem}:
+      \begin{itemize}
+        \item target user, key questions, success criteria.
+      \end{itemize}
+    \item \textbf{2. Select data \& models}:
+      \begin{itemize}
+        \item datasets, external documents, HF models, LLM endpoints.
+      \end{itemize}
+    \item \textbf{3. Design the pipeline}:
+      \begin{itemize}
+        \item retrieval / preprocessing, model calls, post-processing.
+      \end{itemize}
+    \item \textbf{4. Implement the minimal version}:
+      \begin{itemize}
+        \item one or two key workflows working end-to-end.
+      \end{itemize}
+    \item \textbf{5. Polish \& present}:
+      \begin{itemize}
+        \item clean up code, add README, prepare a concise demo.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Final Remarks}
+  \begin{itemize}
+    \item Use this day to \textbf{experiment} and \textbf{connect ideas} from the course.
+    \item Keep the scope realistic, but do not hesitate to be creative in your design.
+    \item Remember the evaluation criteria: clarity of use case, clean code, integration of course content, and a clear presentation.
+    \item Most importantly: have fun building with LLMs and data.
+  \end{itemize}
+\end{frame}
+
+\end{document}
+
