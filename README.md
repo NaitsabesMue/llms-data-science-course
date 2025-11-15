@@ -3,22 +3,17 @@
 This repository contains materials for a **21-hour lecture** titled:
 
 > **Large Language Models in Data Science**  
-> *Prompting, Fine-Tuning, Retrieval & Applied Use Cases*
-
----
-
-## ⚠️ Status: Work in Progress
-
-This course is under active development. Materials, notebooks, and project templates will evolve over time as we adapt content to student feedback and available tooling.
+> *Embeddings, Prompting, Retrieval & Applied Use Cases*
 
 ---
 
 ## 🎯 Course Objectives
 
-- Understand the architecture and functioning of large language models (LLMs)
-- Learn prompt engineering and retrieval-augmented generation (RAG)
-- Explore lightweight fine-tuning techniques (e.g., LoRA)
-- Apply LLMs to real data science tasks: analysis, reporting, feature generation, and code assistance
+- Understand how modern LLMs work: tokens, embeddings, transformer architecture, and inference.
+- Use pretrained models via Hugging Face and API-based LLMs in a reproducible way.
+- Design effective prompts and retrieval-augmented generation (RAG) pipelines that use embeddings and keyword search.
+- Compare different approaches (regex rules, classical ML, HF models, zero-shot LLMs, RAG) in terms of quality and latency.
+- Evaluate model performance with simple but meaningful metrics (accuracy, latency, precision/recall, grounding) and apply LLMs to real data science tasks (analysis, reporting, feature generation, code assistance).
 
 ---
 
@@ -41,6 +36,7 @@ This course is under active development. Materials, notebooks, and project templ
 | `labs/` | Jupyter notebooks for hands-on experimentation |
 | `examples/` | Prebuilt pipelines: OpenAI API, RAG demos, etc. |
 | `projects/` | Hackathon templates and ideas |
+| `data/` | Data sets |
 
 ---
 
@@ -63,10 +59,7 @@ The final mark (out of 20) will be based on participation in a **group hackathon
 
 ## 📅 Timeline
 
-Materials and project themes will be released progressively over the semester. Stay tuned for:
-- Weekly labs and reference notebooks
-- Suggested datasets and use cases
-- Hackathon timeline and submission deadlines
+Materials for Weeks 1–6 (lectures, labs, and hackathon template) are available in this repository. Future iterations may refine content and add additional examples.
 
 ---
 
@@ -87,7 +80,20 @@ Materials and project themes will be released progressively over the semester. S
 - Lab: `labs/week_3_effective_llm_use.ipynb`
 - Notes: The lab uses the Gemini API. Set an environment variable `GEMINI_API_KEY` (e.g., add it to `.env`) and install `google-generativeai` before running.
 
+### Week 4 – Text Classification and Intent Routing
+- Slides: `slides/week_4_classification.tex`
+- Lab: `labs/week_4_classification.ipynb`
+- Notes: Build and compare several intent classifiers (regex rules, embeddings + logistic regression, zero-shot NLI, LLM prompting) for an AMU student chatbot; analyse accuracy and latency trade-offs.
 
+### Week 5 – Retrieval-Augmented Generation (RAG)
+- Slides: `slides/week_5_rag.tex`
+- Lab: `labs/week_5_rag.ipynb`
+- Notes: Construct a small RAG system over an AMU / Data Science corpus; explore BM25 vs. embeddings vs. hybrid retrieval; observe how augmented prompts change answers and reduce hallucinations.
+
+### Week 6 – Hackathon: Applied LLM Projects
+- Slides: `slides/week_6_hackathon.tex`
+- Template: `labs/week_6_hackathon_template.ipynb`
+- Notes: One-day team hackathon (1–5 students) to design and implement a small end-to-end LLM/RAG project in a GitHub repository, then present a short demo. See the “Final Evaluation: Hackathon” section above for grading criteria.
 
 ---
 
