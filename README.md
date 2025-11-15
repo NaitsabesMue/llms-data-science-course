@@ -32,11 +32,9 @@ This repository contains materials for a **21-hour lecture** titled:
 
 | Folder | Description |
 |--------|-------------|
-| `slides/` | LaTeX slide decks for all lectures |
-| `labs/` | Jupyter notebooks for hands-on experimentation |
-| `examples/` | Prebuilt pipelines: OpenAI API, RAG demos, etc. |
-| `projects/` | Hackathon templates and ideas |
 | `data/` | Data sets |
+| `labs/` | Jupyter notebooks for hands-on experimentation |
+| `slides/` | LaTeX slide decks for all lectures |
 
 ---
 
