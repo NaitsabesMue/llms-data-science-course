@@ -1,0 +1,535 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{beamerthemeAMU}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit}
+
+% TikZ styles for RAG diagrams (kept visually consistent with Week 1)
+\colorlet{ragQueryBg}{AMU_acc5!35!AMU_lt1}
+\colorlet{ragContextBg}{AMU_lt2!70!AMU_lt1}
+\colorlet{ragLLMBg}{AMU_dk2!15!AMU_lt1}
+\colorlet{ragStoreBg}{AMU_acc6!18!AMU_lt1}
+\colorlet{ragArrow}{AMU_acc1}
+\colorlet{ragGray}{AMU_dk1!65!AMU_lt1}
+
+\tikzset{rag/box/.style={draw=AMU_dk1, rounded corners=6pt, inner sep=7pt, align=center, font=\small}}
+\tikzset{rag/query/.style={rag/box, fill=ragQueryBg, minimum width=3.8cm}}
+\tikzset{rag/llm/.style={rag/box, fill=ragLLMBg, minimum width=3.9cm, minimum height=1.5cm}}
+\tikzset{rag/store/.style={rag/box, fill=ragStoreBg, minimum width=3.7cm, minimum height=1.5cm}}
+\tikzset{rag/context/.style={rag/box, fill=ragContextBg, minimum width=4.6cm, minimum height=1.7cm}}
+\tikzset{rag/prompt/.style={rag/box, fill=AMU_lt1!90!white, minimum width=5.2cm, minimum height=2.0cm}}
+\tikzset{rag/arrow/.style={->, line width=1.1pt, >=Stealth, draw=ragArrow}}
+\tikzset{rag/note/.style={font=\scriptsize, text=ragGray}}
+
+\newcommand{\RAGVsLLMDiagram}{%
+  \begin{tikzpicture}[scale=0.8, transform shape, node distance=1.5cm and 2.8cm]  
+    % Vanilla prompting
+    \node[rag/query] (q1) {User query};
+    \node[rag/llm, right=1.8cm of q1] (llm1) {LLM only};
+    \draw[rag/arrow] (q1) -- (llm1);
+    \node[rag/note, below=0.15cm of q1] {Vanilla prompting};
+    \node[rag/note, below=0.15cm of llm1] {Answers from training data only};
+
+    % RAG pipeline
+    \node[rag/query, below=2.0cm of q1] (q2) {User query};
+    \node[rag/store, right=1.8cm of q2] (store) {Document store\\ / index};
+    \node[rag/context, below=0.9cm of store] (ctx) {Retrieved chunks};
+    \node[rag/llm, right=1.8cm of ctx] (llm2) {LLM with RAG};
+
+    \draw[rag/arrow] (q2) -- (store);
+    \draw[rag/arrow] (store) -- (ctx);
+    \draw[rag/arrow] (q2) |- (ctx);
+    \draw[rag/arrow] (ctx) -- (llm2);
+
+    \node[rag/note, below=0.15cm of q2] {Retrieval-augmented generation};
+    \node[rag/note, below=0.15cm of llm2] {Answers grounded in your data};
+  \end{tikzpicture}%
+}
+
+\newcommand{\RAGAugmentedPromptDiagram}{%
+  \begin{tikzpicture}[scale=0.8, transform shape, node distance=1.5cm and 2.8cm]
+    \node[rag/query] (user) {User question};
+    \node[rag/store, right=0.9cm of user] (index) {Hybrid retriever\\(BM25 + embeddings)};
+    \node[rag/context, right=0.9cm of index] (ctx) {Top-$k$ relevant chunks};
+    \node[rag/prompt, below=0.9cm of ctx] (prompt) {\textbf{Augmented prompt}\\[0.2em]
+      \scriptsize System instructions + question + retrieved context};
+    \node[rag/llm, left=0.9cm of prompt] (llm) {LLM answer};
+
+    \draw[rag/arrow] (user) -- (index);
+    \draw[rag/arrow] (index) -- (ctx);
+    \draw[rag/arrow] (ctx) -- (prompt);
+    \draw[rag/arrow] (prompt) -- (llm);
+  \end{tikzpicture}%
+}
+
+\newcommand{\RAGHybridRetrievalDiagram}{%
+  \begin{tikzpicture}[scale=0.8, node distance=1.4cm and 2.4cm]
+    \node[rag/query] (q) {User query};
+
+    \node[rag/store, below left=0.5cm and 1.3cm of q] (lex) {Keyword /\\BM25};
+    \node[rag/store, below right=0.5cm and 1.3cm of q] (vec) {Embedding\\search};
+
+    \node[rag/context, below=1.7cm of q, minimum width=5.0cm] (combine) {Hybrid candidate set\\(rerank, intersect, union)};
+    \node[rag/store, below=0.95cm of combine, minimum width=5.0cm] (meta) {Metadata filters\\(final refinement in our lab)};
+
+    \draw[rag/arrow] (q) -- (lex);
+    \draw[rag/arrow] (q) -- (vec);
+    \draw[rag/arrow] (lex) -- (combine);
+    \draw[rag/arrow] (vec) -- (combine);
+    \draw[rag/arrow] (combine) -- (meta);
+  \end{tikzpicture}%
+}
+
+% Listing style for code snippets
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
+
+\title{Large Language Models in Data Science}
+\subtitle{Week 5: Retrieval-Augmented Generation (RAG)}
+\author{Sebastian Mueller}
+\institute{Aix-Marseille Universit\'e}
+\date{2025-2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Session Overview}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.55\linewidth}
+      \textbf{Lecture (1h)}
+      \begin{enumerate}
+        \item From LLMs to RAG
+        \item Retrieval and search basics
+        \item Augmenting prompts with context
+        \item Lexical, metadata, and embedding search
+        \item Putting it together: RAG architectures
+        \item Example: Marseille \& data science assistant
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \textbf{Lab (2h)}
+      \begin{itemize}
+        \item Ingest a small corpus about Marseille \& AMU data science
+        \item Build an embedding index with metadata
+        \item Implement a simple RAG chain
+        \item Compare answers with and without retrieval
+        \item Optional: add citations \& reranking
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{Motivation \& Recap}
+
+\begin{frame}{Where We Are in the Course}
+  \begin{itemize}
+    \item Week 1: Tokens, embeddings, transformer architecture.
+    \item Week 2: Using pretrained models via Hugging Face.
+    \item Week 3: Effective LLM use for coding, research, ideation.
+    \item Week 4: Text classification and intent routing for an AMU chatbot.
+    \item \textbf{Week 5: RAG} — combine all ingredients to build assistants grounded in your own data.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Why Do We Need RAG?}
+  \begin{itemize}
+    \item LLMs are trained on huge but \emph{fixed} corpora; they do not know your internal documents or freshest data.
+    \item Direct prompting relies on the model ``remembering'' facts from pretraining, which leads to hallucinations and outdated answers.
+    \item Many data science tasks need answers grounded in:
+      \begin{itemize}
+        \item institutional documents (course catalog, policies),
+        \item project reports, notebooks, dashboards,
+        \item domain-specific knowledge bases.
+      \end{itemize}
+    \item RAG attaches a \emph{retrieval system} to the LLM so answers can depend on external, updatable data.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{From Vanilla LLM to RAG}
+  \centering
+  \RAGVsLLMDiagram
+\end{frame}
+
+\begin{frame}{From Vanilla LLM to RAG}
+  \begin{itemize}
+    \item Mathematically we move from $P(\text{answer} \mid \text{question})$ to
+      \[
+        P(\text{answer} \mid \text{question}, \text{retrieved context}).
+      \]
+    \item The only thing the LLM sees is the \emph{prompt}; RAG works by \textbf{augmenting the prompt} with relevant context.
+  \end{itemize}
+\end{frame}
+
+\section{RAG Building Blocks}
+
+\begin{frame}{Core Components of a RAG System}
+  \begin{itemize}
+    \item \textbf{Document store}: where raw texts live (internet, files, database, data lake, etc.).
+    \item \textbf{Chunking}: split documents into passages that are short enough to fit in the context window.
+    \item \textbf{Metadata}: structured fields such as title, source, date, language, tags.
+    \item \textbf{Index}: data structures to support fast search (inverted index, vector index, or both).
+    \item \textbf{Retriever}: given a query, returns relevant chunks (possibly with scores).
+    \item \textbf{LLM + prompt template}: turns query + retrieved chunks into an answer.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Documents, Chunks, and Metadata}
+  \begin{itemize}
+    \item \textbf{Document}: a logically complete piece of text (course syllabus, FAQ page, PDF report).
+    \item \textbf{Chunk}: a slice of a document (e.g., a few paragraphs) used as the atomic retrieval unit.
+    \item \textbf{Metadata examples for AMU / Marseille:}
+      \begin{itemize}
+        \item \texttt{source\_type} (``course\_catalog'', ``housing\_info'', ``lab\_sheet'').
+        \item \texttt{campus} (``Luminy'', ``Saint-Charles'', ``Aix''), \texttt{city} (``Marseille'', ``Aix-en-Provence'').
+        \item \texttt{program} (``MSc Data Science''), \texttt{year}, \texttt{language}.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Retrieval Basics: Three Signals}
+  \begin{itemize}
+    \item \textbf{Lexical / keyword search}
+      \begin{itemize}
+        \item Uses exact or fuzzy matches of words (e.g., BM25).
+        \item Very precise when user vocabulary matches the documents.
+      \end{itemize}
+    \item \textbf{Embedding (semantic) search}
+      \begin{itemize}
+        \item Encode query and chunks into vectors; retrieve nearest neighbors.
+        \item Captures semantics beyond exact words (``student card'' $\approx$ ``carte \'etudiant'').
+      \end{itemize}
+    \item \textbf{Metadata filtering}
+      \begin{itemize}
+        \item Restrict the candidate set using structured filters (e.g., campus = ``Marseille'').
+        \item Cheap and interpretable; in our lab pipeline we apply it as a \emph{final refinement} after lexical and embedding search.
+        \item In large production systems you might also use metadata as a coarse pre-filter before more expensive retrieval.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{From Bag-of-Words to BM25}
+  \begin{itemize}
+    \item \textbf{Bag-of-words (BoW)}:
+      \begin{itemize}
+        \item represent each document as a vector of word counts,
+        \item simple and fast, but treats all terms and all documents equally.
+      \end{itemize}
+    \item \textbf{Term frequency (TF)}: words that repeat many times in a document should matter more.
+    \item \textbf{Inverse document frequency (IDF)}: rare words across the corpus carry more signal than very common ones.
+    \item Naive TF or TF--IDF:
+      \begin{itemize}
+        \item can over-favor very long documents (more opportunities to match),
+        \item can over-reward repeated words without saturation.
+      \end{itemize}
+    \item BM25 refines this idea to give a stronger, length-aware lexical baseline.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{BM25: Tunable Keyword Scoring}
+  \small
+  \begin{itemize}
+    \item \textbf{Definition}: BM25 scores a document $d$ for a query term $t$ roughly as:
+      \[
+        \text{score}(t,d) \propto \text{IDF}(t)\;
+        \frac{(k_1 + 1)\,\text{TF}(t,d)}{\text{TF}(t,d) + k_1\left(1 - b + b\cdot \frac{\text{document length}}{\text{average document length}}\right)}.
+      \] 
+      {\scriptsize Best Matching 25 was named as the 25th variant in a series of scoring
+functions proposed by its creators.}
+    \item \textbf{Key intuitions}:
+      \begin{itemize}
+        \item \emph{Term frequency saturation}: repeating a word helps, but with diminishing returns.
+        \item \emph{Document length normalization}: longer documents are penalized.
+        \item \emph{IDF}: rare terms across the corpus contribute more to the score.
+      \end{itemize}
+    \item \textbf{Tunable parameters}:
+      \begin{itemize}
+        \item $k_1$ controls how fast the TF effect saturates,
+        \item $b$ controls how strongly document length is normalized.
+      \end{itemize}
+    \item In practice: a well-tuned BM25 is often the \emph{best starting point} for keyword-based retrieval in RAG systems.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Combining Keywords, and Embeddings}
+  \centering
+  \RAGHybridRetrievalDiagram
+\end{frame}
+
+
+\begin{frame}{Combining Keywords, and Embeddings}
+  \begin{itemize}
+    \item Typical RAG uses a \textbf{hybrid retriever}:
+      \begin{itemize}
+        \item run keyword search and embedding search,
+        \item combine candidates by intersection / union and rerank,
+        \item then apply metadata filters as a final refinement step (as in our lab).
+      \end{itemize}
+    \item Choice of combination controls the trade-off between recall and precision.
+  \end{itemize}
+\end{frame}
+
+\section{Augmenting the Prompt}
+
+\begin{frame}{From Retrieval to Augmented Prompt}
+  \centering
+  \RAGAugmentedPromptDiagram
+  \vspace{0.5em}
+  \begin{itemize}
+    \item RAG is not a new model; it is a \emph{prompting strategy} powered by a retriever.
+    \item Quality hinges on:
+      \begin{itemize}
+        \item what you retrieve (indexing, chunking, retriever),
+        \item how you format it in the prompt (templates, instructions, citations).
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Prompt Template for Q\&A}
+  \begin{itemize}
+    \item Typical template (simplified):
+  \end{itemize}
+  \vspace{-0.4em}
+  \begin{lstlisting}[language={},basicstyle=\ttfamily\small]
+You are a helpful assistant for data science students in Marseille.
+Use only the information in the CONTEXT to answer.
+If the answer is not in the CONTEXT, say you don't know.
+
+CONTEXT:
+{{ retrieved_chunks }}
+
+QUESTION:
+{{ user_question }}
+  \end{lstlisting}
+  \vspace{-0.4em}
+  \begin{itemize}
+    \item The retrieved chunks become part of the prompt; they \emph{augment} the original question.
+    \item Clear instructions reduce hallucinations and encourage citing the provided context.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Context Size and Ranking}
+  \begin{itemize}
+    \item Context window is limited: we cannot paste the entire knowledge base into every prompt.
+    \item We must choose:
+      \begin{itemize}
+        \item \textbf{Top-$k$}: how many chunks to include?
+        \item \textbf{Max tokens}: truncate text to stay within the limit.
+        \item \textbf{Ranking strategy}: score by similarity, recency, or custom signals (e.g., student vs. admin).
+      \end{itemize}
+    \item Trade-off:
+      \begin{itemize}
+        \item too few chunks $\Rightarrow$ model misses key information;
+        \item too many chunks $\Rightarrow$ context becomes noisy and harder to use.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Example: Marseille Assistant}
+
+\begin{frame}{Use Case: AMU / Marseille Data Science Assistant}
+  \begin{itemize}
+    \item Build an assistant for:
+      \begin{itemize}
+        \item the MSc Data Science programme in Marseille,
+        \item practical life in the city for students.
+      \end{itemize}
+    \item Example questions:
+      \begin{itemize}
+        \item ``Where are the data science lectures in Marseille usually held?''
+        \item ``How can I access the computer labs on Sundays?''
+        \item ``What are good quiet places to study data science in Marseille?''
+      \end{itemize}
+    \item We want answers grounded in:
+      \begin{itemize}
+        \item official programme pages,
+        \item campus maps and schedules,
+        \item curated local tips in our own documents.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Step 1: Ingest \& Chunk}
+  \begin{itemize}
+    \item Collect source documents:
+      \begin{itemize}
+        \item programme descriptions (PDFs, HTML),
+        \item campus information and opening hours,
+        \item local guides curated by teaching staff.
+      \end{itemize}
+    \item Normalize text (encoding, language detection, basic cleaning).
+    \item Chunk into passages:
+      \begin{itemize}
+        \item target e.g. 200--500 tokens per chunk,
+        \item keep semantic coherence (sections, headings).
+      \end{itemize}
+    \item Attach metadata:
+      \begin{itemize}
+        \item \texttt{campus=Marseille}, \texttt{program=Data Science}, \texttt{source\_url}, \texttt{section\_title}, \dots
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Step 2: Index \& Retrieve}
+  \begin{itemize}
+    \item Compute embeddings for each chunk using a multilingual sentence model.
+    \item Store vectors in a vector index (e.g., FAISS, ScaNN, or a hosted service).
+    \item At query time:
+      \begin{enumerate}
+        \item Parse the user question (language, intent).
+        \item Run hybrid search (embeddings $+$ keywords) over all candidate chunks.
+        \item Apply metadata filters as a final refinement (e.g., \texttt{campus=Marseille}, \texttt{program=Data Science}).
+        \item Return top-$k$ chunks with scores after filtering.
+      \end{enumerate}
+    \item This ``search'' stage is independent from the LLM and can be tuned separately (retriever, metadata filters, and ranking strategy).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3: Build the Augmented Prompt - Template in code (pseudo-Python}
+  \vspace{-0.6em}
+  \small
+  \begin{lstlisting}[language=Python]
+chunks = retrieve_hybrid(query)  # BM25 + embeddings
+chunks = [ # Metadata-based refinement applied after retrieval
+    c for c in chunks
+    if c["campus"] == "Marseille"
+    and c["program"] == "Data Science"
+]
+context = "\n\n".join(chunk["text"] for chunk in chunks)
+prompt = f"""
+You are an assistant for data science students in Marseille. Answer the ques-
+tion using only the CONTEXT below. If the answer is not in the CONTEXT, say you 
+don't know.
+CONTEXT:
+{context}
+QUESTION:
+{query}"""
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}{Step 4: Answer, Evaluate, Iterate}
+  \begin{itemize}
+    \item Send the augmented prompt to the chosen LLM (OpenAI, local model, etc.).
+    \item Log:
+      \begin{itemize}
+        \item user question,
+        \item retrieved chunks and scores,
+        \item final answer and model parameters.
+      \end{itemize}
+    \item Evaluate on a small test set:
+      \begin{itemize}
+        \item correctness (does the answer match ground truth?),
+        \item grounding (can we see the supporting chunks?),
+        \item robustness (different phrasings, languages, levels of detail).
+      \end{itemize}
+    \item Iteratively tune:
+      \begin{itemize}
+        \item retriever (chunking, embeddings, ranking),
+        \item prompt (instructions, formatting, citations).
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Precision and Recall Refresher}
+  \begin{itemize}
+    \item \textbf{Precision}: among the retrieved items, how many are relevant?
+      \[
+        \text{Precision} = \frac{\text{true positives}}{\text{true positives} + \text{false positives}}.
+      \]
+    \item \textbf{Recall}: among all relevant items in the corpus, how many did we retrieve?
+      \[
+        \text{Recall} = \frac{\text{true positives}}{\text{true positives} + \text{false negatives}}.
+      \]
+    \item Example (retrieval for a RAG system):
+      \begin{itemize}
+        \item there are 20 truly relevant chunks in the corpus,
+        \item your retriever returns 10 chunks, 8 of which are relevant.
+      \end{itemize}
+      Then:
+      \[
+        \text{Precision} = \frac{8}{10} = 0.8,\quad
+        \text{Recall} = \frac{8}{20} = 0.4.
+      \]
+    \item For RAG, we usually prefer \emph{high recall} at the retrieval stage, then let the LLM focus on precision.
+  \end{itemize}
+\end{frame}
+
+\section{Discussion \& Takeaways}
+
+\begin{frame}{RAG vs Fine-Tuning}
+  \begin{itemize}
+    \item \textbf{Fine-tuning}:
+      \begin{itemize}
+        \item adapts model weights,
+        \item good for new behaviors or styles,
+        \item expensive to update, may still hallucinate facts.
+      \end{itemize}
+    \item \textbf{RAG}:
+      \begin{itemize}
+        \item keeps base model fixed,
+        \item plugs in external, updatable knowledge via retrieval,
+        \item easier to iterate on (update data, retriever, or prompts).
+      \end{itemize}
+    \item In practice:
+      \begin{itemize}
+        \item start with RAG for most data-centric use cases,
+        \item consider fine-tuning on top of a good RAG pipeline if behavior still needs shaping.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Common Pitfalls}
+  \begin{itemize}
+    \item \textbf{Hallucinated citations}: model invents sources or mixes documents.
+    \item \textbf{Shallow retrieval}: top-$k$ chunks are off-topic or redundant.
+    \item \textbf{Stale data}: document store not updated as the real world evolves.
+    \item \textbf{Leaky prompts}: model uses prior knowledge instead of the provided context.
+    \item \textbf{Evaluation gap}: no clear test set or feedback loop.
+  \end{itemize}
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Good engineering practice:
+      \begin{itemize}
+        \item log everything,
+        \item add human review for early deployments,
+        \item maintain small, curated evaluation sets.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{How the Pieces Fit Together}
+  \begin{itemize}
+    \item Tokens, embeddings, and transformers (Weeks 1--2) explain how LLMs represent and process text.
+    \item Effective prompting (Week 3) gives us control over model behavior.
+    \item Classification (Week 4) is one example of using embeddings and LLMs for structured decisions.
+    \item \textbf{RAG (Week 5)} combines all of these:
+      \begin{itemize}
+        \item embeddings for retrieval,
+        \item prompts for grounding and style,
+        \item evaluation for reliability.
+      \end{itemize}
+    \item This is the main pattern behind many modern data science assistants.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Looking Ahead}
+  \begin{itemize}
+    \item In the lab you will:
+      \begin{itemize}
+        \item build a minimal RAG pipeline over a small Marseille / AMU corpus,
+        \item experiment with keyword vs embedding vs hybrid retrieval,
+        \item observe how prompt design affects grounding.
+      \end{itemize}
+    \item In the hackathon you can reuse these ideas:
+      \begin{itemize}
+        \item many impactful projects are just: ``a good RAG system + a good UI''.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\end{document}
