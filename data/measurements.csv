@@ -1,0 +1,9 @@
+sample,group,value,unit
+A1,control,10,mg/L
+A2,control,12,mg/L
+A3,control,,mg/L
+A4,control,11,mg/L
+B1,treatment,8,mg/L
+B2,treatment,9,mg/L
+B3,treatment,7,mg/L
+B4,treatment,,mg/L

@@ -4,6 +4,16 @@ venvLLMDS/
 
 # Local environment variables
 .env
+.env.*
+!.env.example
+
+# Private student work, grades, solutions, instructor notes, and run artifacts
+/local/
+
+# Notebook and Python caches
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
 
 # LaTeX build artifacts
 *.aux

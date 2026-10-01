@@ -15,7 +15,7 @@
 \subtitle{Week 4: Text Classification — Intent Routing for AMU Chatbot}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
-\date{2025-2026}
+\date{2026--2027}
 
 \begin{document}
 
@@ -86,9 +86,9 @@
 \begin{frame}{Four Approaches at a Glance}
   \begin{itemize}
     \item \textbf{Regex baseline}: Fastest and transparent; brittle, hard to scale.
-    \item \textbf{Embeddings + LogisticRegression}: High accuracy with small data; fast inference; retrain to add intents.
+    \item \textbf{Embeddings + LogisticRegression}: Train on labelled examples; measure held-out accuracy and inference time.
     \item \textbf{Zero-shot classification (MNLI)}: No training; label phrasing matters; moderate latency.
-    \item \textbf{LLM prompt}: Most flexible and often strongest; slowest and requires parsing structured output.
+    \item \textbf{LLM prompt}: Describe labels in the prompt; measure accuracy, latency, and invalid outputs.
   \end{itemize}
 \end{frame}
 

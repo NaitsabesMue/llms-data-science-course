@@ -12,7 +12,7 @@
 \subtitle{Week 3: Prompting for Effective LLM Use}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
-\date{2025-2026}
+\date{2026--2027}
 
 \begin{document}
 
@@ -37,7 +37,7 @@
     \begin{column}{0.4\linewidth}
       \textbf{Lab (1.5h)}
       \begin{itemize}
-        \item Gemini 1.5 Flash in notebooks
+        \item Current Gemini SDK in notebooks
         \item Role prompting: see outcome change
         \item Structured prompts and JSON parsing
         \item Generate and run small EDA code
@@ -51,7 +51,7 @@
 
 \begin{frame}{Prompting Makes a Big Difference}
   \begin{itemize}
-    \item Clarity and structure often outweigh model choice for many tasks.
+    \item Compare prompts on the same examples; measure whether the change helps.
     \item A clear goal and acceptance criteria lead to better outputs.
     \item Save prompts and parseable outputs to reproduce analyses.
   \end{itemize}
@@ -67,12 +67,12 @@
     \item \textbf{Separate parts}: Keep instructions, data, and output format distinct.
     \item \textbf{Format outputs}: Require JSON or fenced code for parsing.
     \item \textbf{Acceptance criteria}: Provide a checklist; ask the model to self-verify.
-    \item \textbf{Few-shot (minimal)}: One short example can anchor style reliably.
+    \item \textbf{Few-shot (minimal)}: Use a short example when the required format is ambiguous.
   \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Reusable Prompt Template}
-\begin{lstlisting}[language=Markdown]
+\begin{lstlisting}[language={}]
 System: You are a senior data scientist.
 Prefer minimal, correct code. Follow the output format exactly.
 
@@ -97,19 +97,19 @@ User:
 
 \begin{frame}[fragile]{Role Prompting: Minimal Example}
 \begin{lstlisting}[language=Python]
-import os, google.generativeai as genai
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
+import os
+from google import genai
+from google.genai import types
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+model = os.environ["GEMINI_MODEL"]
 PROMPT = "In one sentence, what do you think about mice?"
 
-# No system instruction
-plain = genai.GenerativeModel("gemini-1.5-flash")
-print(plain.generate_content(PROMPT).text)
-
-# System instruction alters tone/persona
-cat = genai.GenerativeModel("gemini-1.5-flash",
-    system_instruction="You are a cat.")
-print(cat.generate_content(PROMPT).text)
+print(client.models.generate_content(
+    model=model, contents=PROMPT).text)
+print(client.models.generate_content(
+    model=model, contents=PROMPT,
+    config=types.GenerateContentConfig(
+        system_instruction="You are a cat.")).text)
 \end{lstlisting}
 \end{frame}
 
@@ -124,7 +124,7 @@ print(cat.generate_content(PROMPT).text)
 \end{frame}
 
 \begin{frame}[fragile]{Formatting Outputs for Parsing}
-\begin{lstlisting}[language=Markdown]
+\begin{lstlisting}[language={}]
 System: Return strict JSON with keys {"summary": str, "tags": [str]}.
 User:
 - Instructions: Summarize the text and produce 3 topical tags.

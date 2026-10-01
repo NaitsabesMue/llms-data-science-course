@@ -91,7 +91,7 @@
 \subtitle{Week 5: Retrieval-Augmented Generation (RAG)}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
-\date{2025-2026}
+\date{2026--2027}
 
 \begin{document}
 
@@ -140,7 +140,7 @@
 \begin{frame}{Why Do We Need RAG?}
   \begin{itemize}
     \item LLMs are trained on huge but \emph{fixed} corpora; they do not know your internal documents or freshest data.
-    \item Direct prompting relies on the model ``remembering'' facts from pretraining, which leads to hallucinations and outdated answers.
+    \item A prompt without supporting documents cannot establish current or private facts.
     \item Many data science tasks need answers grounded in:
       \begin{itemize}
         \item institutional documents (course catalog, policies),
@@ -477,8 +477,8 @@ QUESTION:
       \end{itemize}
     \item In practice:
       \begin{itemize}
-        \item start with RAG for most data-centric use cases,
-        \item consider fine-tuning on top of a good RAG pipeline if behavior still needs shaping.
+        \item start by putting a small document set directly in the context,
+        \item add retrieval when the corpus is large, changing, or needs source selection.
       \end{itemize}
   \end{itemize}
 \end{frame}
@@ -513,7 +513,7 @@ QUESTION:
         \item prompts for grounding and style,
         \item evaluation for reliability.
       \end{itemize}
-    \item This is the main pattern behind many modern data science assistants.
+    \item Retrieval can also be a tool selected by an agent.
   \end{itemize}
 \end{frame}
 
@@ -527,9 +527,64 @@ QUESTION:
       \end{itemize}
     \item In the hackathon you can reuse these ideas:
       \begin{itemize}
-        \item many impactful projects are just: ``a good RAG system + a good UI''.
+        \item compare a simple baseline with your proposed workflow on the same tasks.
       \end{itemize}
   \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Full Documents or Retrieval?}
+  \begin{itemize}
+    \item Small corpus: put the relevant documents directly into the prompt.
+    \item Larger or changing corpus: retrieve a subset and keep source identifiers.
+    \item A long context window does not guarantee accurate use of every fact.
+    \item Compare source support, answer quality, latency, and token cost.
+    \item The existing retrieval lab illustrates the choice; a vector database is optional.
+  \end{itemize}
+  \small\href{https://ai.google.dev/gemini-api/docs/long-context}{Google: long-context guidance}
+\end{frame}
+
+\section{From Generated Code to an Agent}
+
+\begin{frame}{Extend the Python Exercise from Week 3}
+  \begin{enumerate}
+    \item Give the model a task, data description, and allowed tools.
+    \item Ask it for Python code; execute in a separate, limited environment.
+    \item Return errors, outputs, and independent checks to the model.
+    \item Let it revise the code; stop on a verified result or a step limit.
+  \end{enumerate}
+  \vspace{0.4em}
+  An agent chooses its next action from observations. A fixed sequence of calls is a workflow.
+\end{frame}
+
+\begin{frame}[fragile]{The Loop We Build}
+\begin{lstlisting}[language=Python]
+for step in range(max_steps):
+    action = choose_action(task, observations)
+    if action.is_final:
+        if verify_result(action.result, observations):
+            break
+    else:
+        result = allowed_tools[action.tool](**action.args)
+        observations.append(result)
+\end{lstlisting}
+  \begin{itemize}
+    \item Generated tests and self-reported success are not independent checks.
+    \item Limit steps, execution time, memory, network access, and output size.
+    \item Keep a trace: proposed code, error, revision, and final check.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Build the Loop, Then Compare Managed Execution}
+  \begin{itemize}
+    \item Our small Python loop makes the decisions and feedback visible.
+    \item Provider code-execution tools manage the execution environment.
+    \item Frameworks can handle tool dispatch and state; the checks still matter.
+    \item Compare correctness and total time, including review and repair.
+    \item Optional lab: \texttt{week\_5\_python\_agent.ipynb}.
+  \end{itemize}
+  \small\href{https://ai.google.dev/gemini-api/docs/code-execution}{Gemini code execution}\quad
+  \href{https://huggingface.co/learn/agents-course/en/unit1/introduction}{Hugging Face: agent cycle}
 \end{frame}
 
 \end{document}

@@ -197,7 +197,7 @@
 \subtitle{Week 1: Concepts, Architecture, Motivation}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
-\date{2025-2026}
+\date{2026--2027}
 
 \begin{document}
 
@@ -231,10 +231,10 @@
 
 \begin{frame}{Motivation: Data Science is Changing}
   \begin{itemize}
-    \item Analysts increasingly converse with their tools instead of writing boilerplate code.
-    \item Reports, dashboards, and even experiments are drafted by generative models.
+    \item LLMs can write code, prepare data, and draft analyses: routine junior data scientist tasks.
+    \item Our goal: improve your performance, with checked results and a measured baseline.
     \item Modern data workflows combine structured data with unstructured documents, code, and conversations.
-    \item Understanding LLMs helps us design safer, more efficient assistants rather than treating them as black boxes.
+    \item We start with tokens and attention, use models on real tasks, and finish with agent loops.
   \end{itemize}
 \end{frame}
 
@@ -604,21 +604,6 @@ The neural network learns the weights of the connections to optimize its predict
 \end{frame}
 
 
-\begin{frame}{Recaps of Embeddings}
-
-\textbf{Why embeddings?}
-\begin{itemize}
-    \item Language models cannot process raw text: we must map tokens to vectors in $\mathbb{R}^d$.
-    \item Embeddings capture semantic similarity in geometry: similar words → close vectors.
-\end{itemize}
-
-\vspace{0.5em}
-\textbf{Embedding domains:}
-\begin{itemize}
-    \item Words, subwords, sentences, documents
-    \item Also used in other modalities: images, audio, graphs
-\end{itemize}
-\end{frame}
 
 \begin{frame}{Similarity in Embedding Space}
   \begin{itemize}
@@ -753,7 +738,7 @@ The neural network learns the weights of the connections to optimize its predict
 \begin{itemize}
     \item Recurrent Neural Networks process tokens sequentially, limiting parallelism and context length.
     \item Transformers (Vaswani et al., 2017) introduced self-attention, enabling long-range dependencies and scalable training, parallelizations on GPUs.
-    \item Result: state-of-the-art across NLP tasks, vision-language models, and code generation.
+    \item Self-attention lets each token combine information from other positions; training processes the sequence in parallel.
   \end{itemize}
   \end{minipage}
 \begin{minipage}
@@ -995,7 +980,7 @@ The neural network learns the weights of the connections to optimize its predict
     \item \textbf{Hallucinations}: confident but fabricated answers without grounding.
     \item \textbf{Inconsistency}: outputs vary with phrasing, temperature, and randomness.
     %\item \textbf{Lack of true reasoning}: pattern matching, not deep understanding
-    \item \textbf{Context window limits}: finite memory (e.g., 8k--200k tokens) affects long documents.
+    \item \textbf{Context window limits}: available input and output tokens depend on the chosen model.
     \item \textbf{Bias and toxicity}: inherited from training data, requiring audits and guardrails.
     \item \textbf{Cost and latency}: API tokens and GPU serving are not free; optimize prompts and batching.
     \item \textbf{No persistent memory}: model forgets state across sessions unless you build storage.
@@ -1016,12 +1001,12 @@ The neural network learns the weights of the connections to optimize its predict
   \begin{center}
     \begin{tabular}{@{}lll@{}}
       \toprule
-      Provider & Example Models (2025) & Access \\
+      Provider & Model family & Access \\
       \midrule
-      OpenAI & o4-mini, o3, GPT-4o & Hosted API (reasoning, vision) \\
-      Google DeepMind & Gemini 2.5 Pro / Flash & Gemini API (free tier + paid) \\
-      Anthropic & Claude Sonnet 4.5 & Claude API / Console \\
-      xAI & Grok-4, Grok-3 & API (OpenAI-compatible) \\
+      OpenAI & GPT & Hosted API \\
+      Google DeepMind & Gemini & Gemini API \\
+      Anthropic & Claude & Claude API / Console \\
+      xAI & Grok & Hosted API \\
       % (Optional) Cohere & Command R+ & Hosted API (RAG/tool use) \\
       \bottomrule
     \end{tabular}
@@ -1030,7 +1015,7 @@ The neural network learns the weights of the connections to optimize its predict
   \vspace{0.6em}
   \textbf{When to choose}
   \begin{itemize}
-    \item Minimal ops, latest frontier models, strong tooling \& SLAs.
+    \item Provider manages serving; check model availability, quota, and cost.
     \item Cons: recurring cost, data governance/contracts, rate limits.
   \end{itemize}
 \end{frame}
@@ -1044,12 +1029,12 @@ The neural network learns the weights of the connections to optimize its predict
   \begin{center}
     \begin{tabular}{@{}lll@{}}
       \toprule
-      Provider & Example Models (2025) & Access \\
+      Provider & Model family & Access \\
       \midrule
-      Meta & Llama 3.1, Llama 4 (Scout/Maverick) & Open weights (license) \\
-      Mistral & Mistral Large/Medium/Small, Pixtral & Open weights \& Mistral API \\
-      Microsoft & Phi-4, Phi-4-reasoning & Open weights (HF) \\
-      Hugging Face Hub & Falcon, Mixtral, Phi, etc. & Hub + Inference API/Endpoints \\
+      Meta & Llama & Check model-specific license \\
+      Mistral & Mistral / Mixtral & Some open weights; also API \\
+      Microsoft & Phi & Model cards on the Hub \\
+      Hugging Face Hub & Model catalogue & Weights and hosted endpoints \\
       \bottomrule
     \end{tabular}
   \end{center}
@@ -1057,24 +1042,25 @@ The neural network learns the weights of the connections to optimize its predict
   \vspace{0.6em}
   \textbf{When to choose}
   \begin{itemize}
-    \item Control, on-prem/privacy, cost efficiency at scale.
+    \item Choose weights for local experiments; measure memory and serving cost.
     \item Cons: you manage serving, scaling, evals, safety layers.
   \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Calling an API}
   \begin{lstlisting}[language=Python]
+import os
 from openai import OpenAI
 client = OpenAI()
 
 resp = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model=os.environ["OPENAI_MODEL"],
     messages=[
         {"role": "system", "content": "You are a data assistant."},
         {"role": "user", "content": "Tell me a joke about matrix inversion."}
     ],
     temperature=0.6,
-    max_tokens=120,
+    max_completion_tokens=120,
 )
 print(resp.choices[0].message.content)
   \end{lstlisting}
@@ -1095,7 +1081,7 @@ print(resp.choices[0].message.content)
     Attention math & \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need (Vaswani et al., 2017)} — original paper. \\
     %Scaling laws & \href{https://arxiv.org/abs/2005.14165}{GPT-3 (Brown et al., 2020)}; \href{https://arxiv.org/abs/2203.15556}{Chinchilla (Hoffmann et al., 2022)} — compute/data trade-offs. \\
     APIs (OpenAI) & \href{https://platform.openai.com/docs}{OpenAI Platform Docs} — endpoints, auth, safety. \\
-    APIs (Gemini) & \href{https://ai.google.dev/gemini-api/docs}{Gemini API Docs} — free tier + multimodal. \\
+    APIs (Gemini) & \href{https://ai.google.dev/gemini-api/docs}{Gemini API Docs} — SDK, model availability, quotas. \\
     APIs (Claude) & \href{https://docs.anthropic.com}{Anthropic Claude Docs} — reasoning, tool use. \\
     APIs (Grok) & \href{https://x.ai/api}{xAI Grok API} — OpenAI-compatible endpoints. \\
      \bottomrule

@@ -1,0 +1,20 @@
+# Shared notebook dependencies; hosted APIs are optional (requirements-live.txt).
+jupyterlab
+ipykernel
+numpy
+pandas
+matplotlib
+seaborn
+scipy
+scikit-learn
+torch
+transformers
+sentence-transformers
+rank-bm25
+python-dotenv
+datasets
+huggingface-hub
+plotly
+accelerate
+psutil
+tqdm
