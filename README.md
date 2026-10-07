@@ -18,22 +18,17 @@ For final-year data science students with a strong mathematics background and wo
 
 Approximately 7 hours of lectures, 7 hours of labs, and a 7-hour hackathon. The six teaching blocks retain last year's order; adjust lecture/lab pacing to fit the timetable.
 
+Week 1 is ready for the current course. Links to later weeks will be added as their materials are revised.
+
 | Week | Topic | Slides | Lab |
 |---|---|---|---|
 | 1 | LLMs: a primer — tokens, embeddings, self-attention, transformers | [PDF](slides/week_1_intro.pdf) · [source](slides/week_1_intro.tex) | [Tokenization and embeddings](labs/week_1_tokenization.ipynb) |
-| 2 | Hugging Face and pretrained models | [PDF](slides/week_2_huggingface.pdf) · [source](slides/week_2_huggingface.tex) | [Hugging Face basics](labs/week_2_huggingface_basics.ipynb) |
-| 3 | Effective LLM use: prompting, coding, research, first analysis | [PDF](slides/week_3_effective_llm_use.pdf) · [source](slides/week_3_effective_llm_use.tex) | [Prompting and Python EDA](labs/week_3_effective_llm_use.ipynb) |
-| 4 | Text classification and intent routing | [PDF](slides/week_4_classification.pdf) · [source](slides/week_4_classification.tex) | [Compare classifiers](labs/week_4_classification.ipynb) |
-| 5 | Retrieval: full context, BM25, embeddings, hybrid search; agent loops at the end | [PDF](slides/week_5_rag.pdf) · [source](slides/week_5_rag.tex) | [Retrieval](labs/week_5_rag.ipynb) · [Python-agent extension](labs/week_5_python_agent.ipynb) |
-| 6 | Hackathon: applied LLM projects | [PDF](slides/week_6_hackathon.pdf) · [source](slides/week_6_hackathon.tex) | [Project template](labs/week_6_hackathon_template.ipynb) |
 
 The original illustrated introduction remains the foundation. RAG remains in the course, with a comparison against supplying the full document set. Detailed retrieval experiments are optional if more time is needed for the final agent loop.
 
 See the [lecture outline](LLM_for_Science_outline.md), [recent lecture videos and readings](docs/references.md), and [revision notes](docs/2026_revision.md).
 
-Week 1 includes an [animated self-attention walkthrough](visualizations/attention/index.html). Open `visualizations/attention/index.html` in a browser; it runs offline. Follow **red toy robot** from token vectors through query/key comparisons, matrix multiplication, value mixing, residual addition, and the next block. Use Play or step through manually; enable **Show matrix calculations** to trace individual products. No installation or API key is needed. The lecture then connects the mechanisms to practice: supply relevant context, keep tool observations current, record generation settings, and verify claims and calculations.
-
-The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer, chat-format token counts, and a comparison of lookup and contextual vectors. An optional NumPy attention exercise matches the animation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
+The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer, chat-format token counts, and a comparison of lookup and contextual vectors. An optional NumPy exercise follows the self-attention calculation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
 
 ## Rules of the game
 
