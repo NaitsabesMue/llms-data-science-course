@@ -5,6 +5,7 @@
 \usepackage{array}
 \usepackage{listings}
 \usepackage{hyperref}
+\usepackage{qrcode}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc,matrix}
 
@@ -210,7 +211,7 @@
     \begin{column}{0.55\linewidth}
       \textbf{Lecture (1.5h)}
       \begin{enumerate}
-        \item Why study LLMs now?
+        \item From LLMs to agents
         \item From words to tokens
         \item Transformer architecture
         \item Training and inference
@@ -227,33 +228,80 @@
   \end{columns}
 \end{frame}
 
-\section{Why Study LLMs?}
-
-\begin{frame}{Motivation: Data Science is Changing}
-  \begin{itemize}
-    \item LLMs can write code, prepare data, and draft analyses: routine junior data scientist tasks.
-    \item Our goal: improve your performance, with checked results and a measured baseline.
-    \item Modern data workflows combine structured data with unstructured documents, code, and conversations.
-    \item We start with tokens and attention, use models on real tasks, and finish with agent loops.
-  \end{itemize}
+\begin{frame}{Rules of the Game}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.30\linewidth}
+      \begin{block}{Lecture}
+        \textbf{Screens off.}
+        \par\vspace{0.5em}
+        Listen, think, and  ask questions.
+      \end{block}
+    \end{column}
+    \begin{column}{0.30\linewidth}
+      \begin{block}{Lab}
+        \textbf{Collaborate.}
+        \par\vspace{0.5em}
+        Use laptops, AI, and coding tools. Test the results and be able to explain your work.
+      \end{block}
+    \end{column}
+    \begin{column}{0.35\linewidth}
+      \begin{block}{Hackathon day}
+        \textbf{Build a working product.}
+        \par\vspace{0.5em}
+        Use an agent loop: call tools, observe results, and revise the work. Deliver something a user can actually use.
+      \end{block}
+    \end{column}
+  \end{columns}
+  \par\vspace{1em}
+  \textbf{Final evaluation}: demonstrate your product and its agent loop. Explain how you applied the course concepts and checked the results.
+  \note{State the working rules before the motivation and technical material. Lectures are for attention, questions, discussion, and paper sketches; screens are off. Labs are collaborative and tools, including AI assistance, are welcome. Students remain able to explain and check the work they produce. The final evaluation is a one-day hackathon. The required outcome is a working product with a model--tool--observation--revision loop, rather than an optional agent feature. Show a real run and connect design choices to the course. A local application or dashboard is sufficient; public deployment is not required. The detailed four-part rubric, team sizes, and presentation timings are in the README and final briefing.}
 \end{frame}
 
+\section{Why Study LLMs?}
 
-
+\begin{frame}{Why Study LLMs in Data Science?}
+  \textbf{Imagine your first assignment:}
+  \par ``Customers are leaving. Find out what changed, and what we should do.''
+  \begin{center}
+  \begin{tikzpicture}[
+    task/.style={draw=AMU_dk2, rounded corners=4pt, align=center,
+      text width=3.15cm, minimum height=1.05cm, inner sep=5pt,
+      font=\fontsize{9.5}{11.2}\selectfont},
+    arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+    \node[task, fill=AMU_dk2!10] (collect) {\textbf{Collect}\\Usage, payments,\\support tickets};
+    \node[task, fill=AMU_acc5!35, right=0.5cm of collect] (analyse) {\textbf{Analyse}\\Compare groups;\\test explanations};
+    \node[task, fill=AMU_lt2!65, right=0.5cm of analyse] (present) {\textbf{Present}\\Dashboard\\and evidence};
+    \node[task, fill=AMU_acc6!12, below=0.45cm of present] (decide) {\textbf{Decide}\\Compare possible\\interventions};
+    \node[task, fill=AMU_dk2!10, below=0.45cm of analyse] (act) {\textbf{Act}\\Run the chosen\\action};
+    \node[task, fill=AMU_lt2!65, below=0.45cm of collect] (observe) {\textbf{Observe}\\Measure outcomes;\\update the data};
+    \draw[arrow] (collect) -- (analyse);
+    \draw[arrow] (analyse) -- (present);
+    \draw[arrow] (present) -- (decide);
+    \draw[arrow] (decide) -- (act);
+    \draw[arrow] (act) -- (observe);
+    \draw[arrow] (observe) -- (collect);
+  \end{tikzpicture}
+  \end{center}
+  \small The next month's data starts the process again.
+  \par\vspace{0.4em}
+  \textbf{Which parts can we automate, and how would we know they worked?}
+  \note{Illustrative scenario, linked to the churn analysis in Week 3. Ask students where they have seen this pattern in stock planning, fraud monitoring, or a scientific experiment. This slide establishes the work before introducing the technology. Next, identify what the language model contributes; then show how tools and feedback turn its proposals into executed work. Students should distinguish associations from causal explanations and judge interventions using outcomes.}
+\end{frame}
 
 \begin{frame}{What is a Large Language Model?}
   \begin{itemize}
-    \item \textbf{Definition}: A neural network trained on massive text corpora to model the probability of token sequences.
+    \item \textbf{Definition}: A neural network trained on text to predict the next token: a unit of text such as a word or word piece.
     \item Given tokens $x_1, \dots, x_{t-1}$, the model estimates
       \[
         P(x_t \mid x_1, \dots, x_{t-1}).
       \]
     \item During inference the model samples one token at a time, feeding each prediction back as context.
-    \item LLMs power question answering, summarization, code generation, and dialogue systems across industry.
+    \item The same process can generate an explanation, SQL query, or Python program from a request.
   \end{itemize}
+  \note{Introduce the model before tools and agents. This is a first description of the autoregressive language model; tokenization and the mechanics of prediction follow later. In our assignment, a prompt can request analysis code or an explanation of support tickets. The next figure distinguishes generated text, embeddings, and classification.}
 \end{frame}
 
-\begin{frame}{LLM Capabilities}
+\begin{frame}{What Can the Model Contribute?}
   \centering
   \resizebox{!}{0.85\textheight}{\begin{tikzpicture}[font=\small, node distance=1.3cm and 2.2cm]
     \node[align=center, font=\bfseries] (inputlabel) {\large Text input\\{\normalsize\color{llmGray} Unstructured data}};
@@ -287,12 +335,174 @@
     \llmParagraph{($(classify.west)+(0.4cm,0.4cm)$)}{5pt}{0/2.4cm}{llmTextAccent}
     \llmParagraph{($(classify.west)+(0.4cm,-0.12cm)$)}{5pt}{0/2.1cm,-0.6/2.2cm}{llmGrayLight}
   \end{tikzpicture}}
+  \note{Use the same churn example to explain the original figure. Text output can be a support-ticket summary or analysis code; embeddings can compare complaint patterns; classification can label support topics. These are model outputs. Next, show the missing connection: a tool executes a proposed action and sends observations back.}
 \end{frame}
 
+
+\begin{frame}{From Generated Code to an Agent Loop}
+  \small In our churn task, the model can write Python. How does that become a working analysis?
+  \begin{center}
+  \begin{tikzpicture}[
+    stage/.style={draw=AMU_dk2, rounded corners=4pt, align=center,
+      text width=2.45cm, minimum height=1.25cm, inner sep=5pt, font=\small},
+    arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+    \node[stage, fill=AMU_acc5!35] (model) {\textbf{Propose}\\LLM writes\\analysis code};
+    \node[stage, fill=AMU_dk2!10, right=0.38cm of model] (tools) {\textbf{Execute}\\Run Python\\separately};
+    \node[stage, fill=AMU_lt2!65, right=0.38cm of tools] (observe) {\textbf{Observe}\\Return results,\\plots, and errors};
+    \node[stage, fill=AMU_acc6!12, right=0.38cm of observe] (decide) {\textbf{Decide}\\Revise or finish\\after validation};
+    \draw[arrow] (model) -- (tools);
+    \draw[arrow] (tools) -- (observe);
+    \draw[arrow] (observe) -- (decide);
+    \draw[arrow] (decide.south) -- ++(0,-0.4cm) -| (model.south);
+    \node[below, font=\scriptsize] at ($(model.south)!0.5!(decide.south)+(0,-0.4cm)$) {feedback informs the next attempt};
+  \end{tikzpicture}
+  \end{center}
+  \small This model--tool--observation cycle is an \textbf{agent loop}.
+  \par\vspace{0.4em}
+  Give it a task, permitted tools, independent checks, and a step/time budget.
+  \par\vspace{0.5em}
+  {\scriptsize\href{https://huggingface.co/learn/agents-course/en/unit1/agent-steps-and-structure}{Hugging Face: the action--observation cycle}}
+  \note{Connect to the preceding model-capabilities figure: generated code is text until a tool executes it. Example: a missing column produces an error; the next attempt inspects the schema and revises the code. The controller returns observations and enforces execution limits; passing independent checks or reaching the budget ends the run. This is the Week 3 Python exercise extended into the Week 5 loop. The next two slides apply that pattern across the same churn workflow.}
+\end{frame}
+
+\begin{frame}{Build the Analysis: Data to Evidence}
+  \small
+  Apply this pattern across the stages of our churn analysis:
+  \vspace{0.2em}
+  {\fontsize{9}{10.2}\selectfont\renewcommand{\arraystretch}{1.1}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{10.1cm}@{}}
+    \toprule
+    \textbf{Stage} & \textbf{Work to specify, execute, and check} \\
+    \midrule
+    Frame the task & Define churn, the time window, the decision, hypotheses, metrics, and acceptance criteria. \\
+    Collect data & Retrieve usage, payments, and support records via SQL, APIs, files, or permitted sources; ingest new records. \\
+    Prepare data & Join sources, parse formats, standardise units, deduplicate, handle missing values, and build repeatable pipelines. \\
+    Explore & Compare retained and lost customers, plot changes, find anomalies, and investigate competing explanations. \\
+    Build models & Construct features, fit churn baselines, train and tune models, compare alternatives, and predict risk. \\
+    Evaluate & Test code, check leakage, compare held-out performance, quantify uncertainty, and revise failed steps. \\
+    \bottomrule
+  \end{tabular}}\par
+  \vspace{0.2em}
+  \textbf{Output}: a reproducible analysis with evidence and checks.
+  \par\vspace{0.1em}
+  {\scriptsize\href{https://docs.cloud.google.com/colab/docs/use-data-science-agent}{Implementation example: Colab Data Science Agent}}
+  \note{The table specifies work that connected tools and loops can attempt; it is not a guarantee of a correct end-to-end result. Keep the same customer-retention assignment. Prediction alone does not establish why customers leave or which intervention will work. Each stage must return inspectable outputs and checks. The next slide asks how the resulting evidence reaches decisions and returns as new data.}
+\end{frame}
+
+\begin{frame}{Close the Loop: Evidence to Action}
+  \small
+  For our task, the evidence must reach a decision and return as new data:
+  \vspace{0.1em}
+  {\fontsize{9}{10.2}\selectfont\renewcommand{\arraystretch}{1.1}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{10.1cm}@{}}
+    \toprule
+    \textbf{Stage} & \textbf{Delivery, decisions, and operation through tools} \\
+    \midrule
+    Communicate & Build an interactive churn dashboard, reports, applications, explanations, and answers to follow-up questions. \\
+    Decide & Compare retention options, costs, and expected outcomes; rank actions under stated objectives and rules. \\
+    Act & Update a database, call an operational API, create a ticket, send an alert, or trigger a permitted process. \\
+    Automate & Schedule ingestion and reports, deploy code, refresh dashboards, and connect steps across systems. \\
+    React & Monitor new data, drift, errors, and outcomes; fetch more evidence, rerun analyses, retrain, or escalate. \\
+    Maintain & Diagnose pipeline failures, revise code, run regression checks, and record versions, provenance, and results. \\
+    \bottomrule
+  \end{tabular}}\par
+  \vspace{0.1em}
+  \textbf{Measure the intervention}: changed behaviour may invalidate the old model.
+  \par\vspace{0.1em}
+  {\scriptsize\href{https://cloud.google.com/blog/products/data-analytics/new-data-agents-across-the-agentic-data-cloud/}{Examples: Google Cloud data, dashboard, and monitoring agents}}
+  \note{Return to the six-box loop on the first motivation slide: these stages close it. A dashboard delivers evidence; an operational tool can change the world. Monitor the intervention's outcomes rather than treating a completed tool call as success. The data-generating process can change after an action. Transition to staffing: if this workflow takes less manual effort, organisations have several choices about how to use the capacity.}
+\end{frame}
+
+\begin{frame}{Will More Data Science Mean More Data Scientists?}
+  \small If this workflow takes less manual effort, what happens to demand and staffing?
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\linewidth}
+      \begin{block}{Expand}
+        Ask more questions. Run more experiments. Offer services that were too expensive.
+      \end{block}
+    \end{column}
+    \begin{column}{0.31\linewidth}
+      \begin{block}{Compress}
+        Produce the same outputs with fewer people. Reduce the labour needed per task.
+      \end{block}
+    \end{column}
+    \begin{column}{0.31\linewidth}
+      \begin{block}{Reorganise}
+        Build and operate automated workflows. Change roles around integration, evaluation, and domain problems.
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.3em}
+  Scenarios to discuss; several can happen together.
+  \par\vspace{0.6em}
+  {\footnotesize
+  \textbf{Employer expectations}: \href{https://www.weforum.org/publications/the-future-of-jobs-report-2025/in-full/2-jobs-outlook/}{WEF (2025)} lists big-data and AI roles among those expected to grow fastest.
+  \par\vspace{0.3em}
+  \textbf{Observed employment}: \href{https://digitaleconomy.stanford.edu/publication/canaries-in-the-coal-mine-six-facts-about-the-recent-employment-effects-of-artificial-intelligence/}{Stanford (August 2026)} finds weaker relative employment for ages 22--25 in AI-exposed U.S. occupations.}
+  \par\vspace{0.5em}
+  \textbf{A growing field can still be harder to enter.}
+  \note{Expand, compress, and reorganise are teaching scenarios, not estimates from a single study. WEF reports employer expectations across several macrotrends; it does not measure realised AI job creation. Stanford uses U.S. payroll data through June 2026 and reports a descriptive divergence, primarily through hiring, not a causal estimate. The inference about entry opportunities does not equate big-data roles with all AI-exposed occupations. Discuss what demand, reliability, costs, and organisational choices would favour each scenario.}
+\end{frame}
+
+\begin{frame}{Who Benefits When a Workflow Is Automated?}
+  \small Beyond staffing, our churn workflow affects who receives offers and how customers are treated.
+  \par\vspace{0.6em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\linewidth}
+      \begin{block}{Access}
+        Can a small lab or public service afford the models, computing, and data needed to benefit?
+      \end{block}
+    \end{column}
+    \begin{column}{0.31\linewidth}
+      \begin{block}{Distribution}
+        Who receives the saved time and money: users, employees, or owners? Who loses work or opportunities?
+      \end{block}
+    \end{column}
+    \begin{column}{0.31\linewidth}
+      \begin{block}{Control}
+        Who sets the retention goal and authorises actions? Can a customer challenge a decision that affects them?
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \textbf{Evaluate effects on the people who use the workflow and those it acts on.}
+  \par\vspace{0.7em}
+  {\footnotesize
+  \href{https://www.ilo.org/publications/disruption-without-dividend-how-digital-divide-and-task-differences-split}{ILO--World Bank (March 2026)}: infrastructure gaps can prevent workers from benefiting.
+  \par\vspace{0.3em}
+  \href{https://www.oecd.org/en/publications/ai-and-skills_f843b352-en/full-report.html}{OECD (June 2026)}: skills, training, and accountability matter for adoption and working conditions.}
+  \note{The access, distribution, and control panels are questions for discussion, not predictions of a single societal outcome. ILO Working Paper 166 studies exposure, task differences, and connectivity across countries; exposure does not measure realised layoffs. OECD synthesises evidence on changing skills and argues for training, transparency, accountability, and worker involvement. Return to the concrete workflow: who decides which retention metric is optimised, whose records are available, and how an affected customer or worker can contest an action?}
+\end{frame}
+
+\begin{frame}{What Does This Mean for You?}
+  \small
+  \textbf{If your only offer is routine work done manually, you are in a bad position.}
+  \vspace{0.4em}
+  \par How do you gain experience when the practice work can be automated?
+  \par\vspace{0.6em}
+  {\footnotesize\renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{7.8cm}l@{}}
+    \toprule
+    \textbf{Our route} & \textbf{What you learn to do} & \textbf{Weeks} \\
+    \midrule
+    Understand the model & Explain tokens, embeddings, attention, training, and inference. & 1--2 \\
+    Direct and check it & Specify tasks; test generated code and classifications. & 3--4 \\
+    Build the loop & Connect context, tools, execution feedback, and stopping checks. & 5--6 \\
+    \bottomrule
+  \end{tabular}}\par
+  \vspace{0.5em}
+  \textcolor{AMU_acc3}{\textbf{Get your ass in gear: learn to build, use, and evaluate these systems.}}
+  \par\vspace{0.4em}
+  \textbf{Course goal}: improve quality, time, and cost on a real task, counting review and repair.
+  \note{Bring the organisational and societal questions back to students: they need to demonstrate useful, checked work, not assume a particular skill is protected from automation. Keep the employment evidence on the earlier jobs slide. This slide supplies the response and states the course goal once. We now start the first dependency: how text becomes numbers that a neural network can process.}
+\end{frame}
 
 \section{From Words to Tokens}
 
 \begin{frame}{Motivation: Machines Need Numbers}
+  \small To understand how the model produces those outputs, start with its input.
+  \par\vspace{0.6em}
   \begin{itemize}
     \item Neural networks operate on numbers, not raw strings.
     \item Preprocessing must map text to numeric inputs while preserving meaning and structure.
@@ -462,9 +672,11 @@
     The neural network is trained to predict if two words are neighbors (appear in similar contexts).
 \end{frame}
 
-\begin{frame}{Neural Networks}
+\begin{frame}{Learning Embeddings with a Feed-Forward Network}
+  \small The predictor on the previous slide takes embedding coordinates as inputs.
     \def\layersep{2.5cm}
 \begin{center}
+  \resizebox{!}{0.60\textheight}{%
     \begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
     \tikzstyle{every pin edge}=[<-,shorten <=1pt]
     \tikzstyle{neuron}=[circle,fill=black!25,minimum size=17pt,inner sep=0pt]
@@ -501,8 +713,12 @@
     \node[annot,left of=hl] {Input layer};
     \node[annot,right of=hl] {Output layer};
 \end{tikzpicture}
+  }
 \end{center}
-The neural network learns the weights of the connections to optimize its predictions.
+\small \textbf{Forward pass}: vectors $\rightarrow$ hidden layer $\rightarrow$ prediction score.
+\par\vspace{0.3em}
+Training adjusts the network weights and embedding vectors to improve predictions.
+\note{Open the neural-network box in the preceding embedding example. This drawing is a schematic predictor, not the exact word2vec architecture. Its inputs are coordinates of the word vectors; its output scores the training task. Gradients update the embedding table as well as the predictor. This explains how the vectors are learned before examining their geometry. Later, an RNN adds a connection from the previous hidden state; Transformers retain feed-forward layers alongside attention.}
 \end{frame}
 
 \begin{frame}{Embedding Dimensions}
@@ -594,50 +810,113 @@ The neural network learns the weights of the connections to optimize its predict
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Embeddings: Turning Tokens into Vectors}
-  \begin{itemize}
-    \item \textbf{Embedding matrix} $E \in \mathbb{R}^{V \times d}$ maps token ids to $d$-dimensional vectors.
-    \item For token id $x_i$, lookup yields $\mathbf{e}_i = E[x_i] \in \mathbb{R}^d$.
-    \item Embeddings capture semantic similarity: similar words live near each other in vector space.
-    \item These vectors are the starting point for all subsequent Transformer computations.
-  \end{itemize}
+\begin{frame}{Embedding Lookup: Select a Learned Row}
+  \small The vectors we have seen live in a learned table. A token ID selects a row.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, inner sep=8pt},
+    arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!35] (token) at (0,0) {\texttt{robot}};
+    \node[box, fill=AMU_lt2!65] (id) at (2,0) {Token ID\\$2$};
+    \matrix (table) at (5.1,0) [matrix of nodes, ampersand replacement=\&,
+      row sep=2pt, column sep=2pt,
+      nodes={minimum width=0.65cm, minimum height=0.55cm, anchor=center},
+      row 1/.style={nodes={font=\bfseries\small}},
+      row 4/.style={nodes={draw=AMU_dk2, fill=AMU_dk2!15}}]
+    {
+      ID \& $e^{(1)}$ \& $e^{(2)}$ \& $e^{(3)}$ \\
+      0 \& $-0.3$ \& $0.1$ \& $0.5$ \\
+      1 \& $0.7$ \& $0.6$ \& $-0.2$ \\
+      2 \& $0.2$ \& $-0.4$ \& $0.8$ \\
+      3 \& $-0.1$ \& $0.9$ \& $0.3$ \\
+    };
+    \node[above=0.3cm of table] {Embedding table $E$};
+    \node[box, fill=AMU_dk2!15] (vector) at (9,0) {$\mathbf{e}_i = [\,0.2,\,-0.4,\,0.8\,]$};
+    \draw[arrow] (token) -- node[above=0.65cm, font=\scriptsize] {tokenizer} (id);
+    \draw[arrow] (id.east) -- (table-4-1.west);
+    \draw[arrow] (table-4-4.east) -- (vector.west);
+    \node[below=0.35cm of vector, align=center] {Input vector for the\\next network computation};
+  \end{tikzpicture}
+  \end{center}
+  \small $E\in\mathbb{R}^{V\times d}$: one row per vocabulary token, $d$ coordinates per row.
+  \par\vspace{0.4em}
+  \textbf{Lookup}: $\mathbf{e}_i=E[x_i]$. Training learns the values; lookup retrieves them.
+  \par\vspace{0.3em}
+  {\scriptsize Illustrative token ID and values; toy table with $V=4$, $d=3$.}
+  \note{The earlier slides explained learning and geometry; this slide shows the actual lookup operation. The token ID is a row index, not a measure of meaning. The highlighted row becomes the input vector. The table and token ID are illustrative, not outputs of a particular tokenizer or trained model. Contextual representations will be computed from this initial vector by the sequence architecture.}
 \end{frame}
 
 
 
-\begin{frame}{Similarity in Embedding Space}
-  \begin{itemize}
-    \item \textbf{Cosine similarity} measures angle between vectors:
-      \[
-        \text{cosine\_sim}(\mathbf{a}, \mathbf{b}) = \frac{\mathbf{a} \cdot \mathbf{b}}{\|\mathbf{a}\| \|\mathbf{b}\|}.
-      \]
-    \item Values range from -1 (opposite) to 1 (same direction).
-    \item Used to find similar words, sentences, or documents.
-    \item Nearest neighhor reveals semantic and functional relationships.
-    \item Beware domain shift; neighbors change with training data
-  \end{itemize}
+\begin{frame}{Compare Directions: Cosine Similarity}
+  \small Which vector is most aligned with $\mathbf{a}$?
+  \par\vspace{0.4em}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.53\linewidth}
+      \centering
+      \begin{tikzpicture}[font=\small, >=Stealth]
+        \draw[gray!30, ->] (-2.5,0) -- (3.6,0);
+        \draw[gray!30, ->] (0,-0.4) -- (0,3.5);
+        \draw[->, very thick, AMU_dk2] (0,0) -- (3,0) node[below] {$\mathbf{a}$};
+        \draw[->, very thick, AMU_acc6] (0,0) -- (2.598,1.5) node[right] {$\mathbf{b}$};
+        \draw[->, very thick, AMU_acc1] (0,0) -- (0,3) node[right] {$\mathbf{c}$};
+        \draw[->, very thick, AMU_acc3] (0,0) -- (-2,0) node[above] {$\mathbf{d}$};
+        \draw[AMU_acc6, thick] (1,0) arc[start angle=0,end angle=30,radius=1];
+        \node[AMU_acc6] at (1.35,0.38) {$30^\circ$};
+        \fill (0,0) circle (1.8pt);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.43\linewidth}
+      \small
+      \begin{tabular}{@{}lrr@{}}
+        \toprule
+        \textbf{Compare to $\mathbf{a}$} & \textbf{Angle} & \textbf{Cosine} \\
+        \midrule
+        $\mathbf{b}$ & $30^\circ$ & $0.87$ \\
+        $\mathbf{c}$ & $90^\circ$ & $0$ \\
+        $\mathbf{d}$ & $180^\circ$ & $-1$ \\
+        \bottomrule
+      \end{tabular}
+      \par\vspace{0.8em}
+      $\displaystyle \cos\theta=\frac{\mathbf{a}\cdot\mathbf{b}}{\|\mathbf{a}\|\,\|\mathbf{b}\|}$
+      \par\vspace{0.6em}
+      Same direction: $1$. Scaling a vector does not change its cosine similarity.
+    \end{column}
+  \end{columns}
+  \vspace{0.6em}
+  \textbf{In the lab}: rank neighbours by cosine, then inspect what the model groups together.
+  \par\vspace{0.3em}
+  {\scriptsize Illustrative vectors in two dimensions; a similarity score is not a guarantee of equivalent meaning.}
+  \note{This adds a comparison operation to the earlier word-map figure, rather than repeating that related words may cluster. All arrows share an origin. The purple vector has angle 30 degrees to the query and the largest cosine among the candidates. The red arrow has a different length, but its opposite direction fixes its cosine at minus one. Use the embedding lab to inspect actual neighbours. Next ask which representation of bank should be compared: a fixed word vector or one computed for the current sentence?}
 \end{frame}
 
 
 \begin{frame}{Static vs Contextual Embeddings}
-\vspace{1em}
-\textbf{Static embeddings}
-  \textit{(e.g., word2vec, GloVe, FastText)}
-  \begin{itemize}
-    \item Each word has a single fixed vector, independent of context
-    \item Cannot handle polysemy (e.g., \texttt{bank} = river vs finance)
-    \item Cannot handle out-of-vocabulary words.
-  \end{itemize}
-
-
-\textbf{Contextual embeddings}
-  \textit{(e.g., ELMo, BERT, GPT)}
-  \begin{itemize}
-    \item Embeddings depend on surrounding context (sentence, paragraph)
-    \item Can disambiguate meaning dynamically
-    \item Use subword tokenization → robust to unknown words
-  \end{itemize}
-
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.47\linewidth}
+      \begin{block}{Static: vector per word type}
+        \small Word2vec, GloVe, FastText
+        \begin{itemize}
+          \item Learn from contexts in the training corpus.
+          \item At use time, the vector is independent of the current sentence.
+          \item \texttt{bank} has the same vector beside \texttt{river} or \texttt{loan}.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.47\linewidth}
+      \begin{block}{Contextual: vector per occurrence}
+        \small ELMo, BERT, GPT
+        \begin{itemize}
+          \item Combine a token's input vector with information from other positions.
+          \item Represent \texttt{bank} differently in different sentences.
+          \item Need an architecture that connects positions.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \textbf{Next step}: carry information from one position to the next.
 \end{frame}
 
 
@@ -648,18 +927,123 @@ The neural network learns the weights of the connections to optimize its predict
 
 
 \begin{frame}{Motivation: Sequential Data}
-  \begin{itemize}
-    \item Language is inherently sequential: word order matters.
-    \item Meaning of words depends on context (previous words).
-    \item RNNs (Elman, 1990; Hochreiter \& Schmidhuber, 1997) process tokens one at a time, maintaining a hidden state that summarizes past context.
-    \item Variants like LSTMs and GRUs address vanishing gradients, enabling longer-range dependencies.
-    \item RNNs were the dominant architecture for NLP before Transformers.
-  \end{itemize}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.45\linewidth}
+      \small
+      \textbf{Order changes meaning:}
+      \par ``dog bites man'' $\ne$ ``man bites dog''
+      \vspace{0.5em}
+      \begin{itemize}
+        \item Embeddings give us a vector for each token. We still need to connect positions.
+        \item An \textbf{RNN} reuses a neural network at each step.
+        \item A \textbf{hidden state} is a vector carrying information from tokens processed so far. Update it using the current token and previous state.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.51\linewidth}
+      \centering
+      \begin{tikzpicture}[
+        font=\small,
+        state/.style={draw=AMU_dk2, fill=AMU_dk2!15, rounded corners=3pt,
+          minimum width=1.1cm, minimum height=0.85cm, align=center},
+        input/.style={draw=AMU_acc6, fill=AMU_acc5!35, rounded corners=3pt,
+          minimum width=1.1cm, minimum height=0.65cm},
+        arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+        \node[state] (h1) at (0,0) {$\mathbf{h}_1$};
+        \node[state] (h2) at (1.9,0) {$\mathbf{h}_2$};
+        \node[state] (h3) at (3.8,0) {$\mathbf{h}_3$};
+        \node[input] (e1) at (0,-1.4) {$\mathbf{e}_1$};
+        \node[input] (e2) at (1.9,-1.4) {$\mathbf{e}_2$};
+        \node[input] (e3) at (3.8,-1.4) {$\mathbf{e}_3$};
+        \node[below=0.15cm of e1] {I};
+        \node[below=0.15cm of e2] {love};
+        \node[below=0.15cm of e3] {robots};
+        \draw[arrow] (e1) -- (h1);
+        \draw[arrow] (e2) -- (h2);
+        \draw[arrow] (e3) -- (h3);
+        \draw[arrow] (h1) -- (h2);
+        \draw[arrow] (h2) -- (h3);
+        \node[above=0.55cm of h2, align=center] {Same network and weights\\at every position};
+      \end{tikzpicture}
+      \par\vspace{0.4em}
+      {\footnotesize $\mathbf{e}_t$: token vector; $\mathbf{h}_t$: hidden state at position $t$.}
+      \par\vspace{0.3em}
+      {\footnotesize Each state combines the current vector with the previous state.}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \small Each step uses the same network: current token + previous state $\longrightarrow$ new state.
+  \note{The diagram unfolds one simple recurrent cell over three positions, not three separately trained networks. Its update is h_t=tanh(W_e e_t+W_h h_(t-1)+b). Start from the earlier feed-forward predictor and point out the added hidden-state input. The embeddings are input vectors; the hidden states are context-dependent representations. The initial state is typically zero here. LSTM and GRU cells use gated updates to help retain information over longer sequences. Next, the existing decoder figure shows generated tokens fed back as inputs; then attention provides another way to connect positions. Historical references: Elman (1990); Hochreiter and Schmidhuber (1997).}
 \end{frame}
 
-\begin{frame}{Autoregressive Nature of Decoder RNN}
+\begin{frame}{RNN Translation: Encoder and Decoder}
+  \small The \textbf{encoder} reads the input into a hidden state. The \textbf{decoder} uses that state to generate the translation.\par\vspace{0.3em}
   \centering
-  \begin{tikzpicture}[
+  \resizebox{!}{0.66\textheight}{\begin{tikzpicture}[
+    box/.style={rectangle, draw, rounded corners=2pt, minimum height=0.8cm, minimum width=1.5cm, align=center, font=\small},
+    inputbox/.style={box, fill=blue!10},
+    outputbox/.style={box, fill=green!10},
+    encoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=cyan!20},
+    decoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=pink!20},
+    label/.style={font=\small, align=left, text width=2cm}
+  ]
+
+    % Input sequence
+    \node[inputbox] (i1) at (1,3.5) {I};
+    \node[inputbox] (i2) at (3,3.5) {love};
+    \node[inputbox] (i3) at (5,3.5) {robots};
+
+
+
+    % Encoder
+    \node[encoderbox, fill=AMU_acc5!80] (enc) at (3,1.5) {
+      \textbf{Encoder (RNN)}\\
+      \small Task: representing language
+    };
+
+    % Decoder
+    \node[decoderbox,  fill=AMU_acc6!60] (dec) at (3,-0.5) {
+      \textbf{Decoder (RNN)}\\
+      \small Task: generating language
+    };
+
+
+    % Arrows from encoder to decoder
+    \draw[dotted] (enc.south west) -- (dec.north west);
+    \draw[dotted] (enc.south east) -- (dec.north east);
+    \draw[->] (enc.south) -- (dec.north) node[midway, right] {}; % Encoder state passed to decoder
+
+    % Output sequence
+    \node[outputbox] (o1) at (1,-2.5) {Ich};
+    \node[outputbox] (o2) at (3,-2.5) {liebe};
+    \node[outputbox] (o3) at (5,-2.5) {Roboter};
+
+ % Arrows from input to encoder
+    \draw[->] (i1) -- (enc);
+    \draw[->] (i2) -- (enc);
+    \draw[->] (i3) -- (enc);
+
+    % Arrows from decoder to output
+    \draw[->] (dec) -- (o1);
+    \draw[->] (dec) -- (o2);
+    \draw[->] (dec) -- (o3);
+
+    % Labels
+    \node[label, left=0.5cm of i1.west] {Input\\sequence};
+    \node[label, left=0.5cm of o1.west] {Output\\sequence};
+
+    % Neural Machine Translation label
+    \node[rotate=90, label, anchor=south] at (-1.5,1) {Neural\\machine\\translation};
+
+    % Dotted border around encoder-decoder
+    \draw[dotted] ([xshift=-0.5cm,yshift=0.5cm]enc.north west) rectangle ([xshift=0.5cm,yshift=-0.5cm]dec.south east);
+
+  \end{tikzpicture}}
+\end{frame}
+
+\begin{frame}{RNN Translation: Generate One Token at a Time}
+  \small The encoder has read the English input. The decoder uses each generated token for the next step.\par\vspace{0.3em}
+  \centering
+  \resizebox{!}{0.66\textheight}{\begin{tikzpicture}[
     box/.style={rectangle, draw, rounded corners=2pt, minimum height=0.8cm, minimum width=1.4cm, align=center, font=\small},
     inputbox/.style={box, fill=AMU_acc5!20},
     outputbox/.style={box, fill=AMU_acc6!20},
@@ -725,7 +1109,7 @@ The neural network learns the weights of the connections to optimize its predict
 
     
 
-  \end{tikzpicture}
+  \end{tikzpicture}}
   
 \end{frame}
 
@@ -736,9 +1120,8 @@ The neural network learns the weights of the connections to optimize its predict
   \begin{minipage}
 [c]{0.45\textwidth}
 \begin{itemize}
-    \item Recurrent Neural Networks process tokens sequentially, limiting parallelism and context length.
-    \item Transformers (Vaswani et al., 2017) introduced self-attention, enabling long-range dependencies and scalable training, parallelizations on GPUs.
-    \item Self-attention lets each token combine information from other positions; training processes the sequence in parallel.
+    \item In an RNN, each hidden state depends on the preceding state: the computation follows a chain.
+    \item Can a token combine information directly from several token vectors, instead of passing it along the chain?
   \end{itemize}
   \end{minipage}
 \begin{minipage}
@@ -750,110 +1133,516 @@ The neural network learns the weights of the connections to optimize its predict
 \end{frame}
 
 
-\begin{frame}{Transformer Architecture Overview}
-  \begin{itemize}
-    \item Key innovation: \textbf{self-attention} mechanism allows each token to attend to all others in the sequence.
-    \item Enables parallel processing of tokens, unlike RNNs.
-    \item Composed of stacked layers of attention and feed-forward networks, with residual connections and normalization.
-  \end{itemize}
+\begin{frame}{Encoder and Decoder: Reading and Writing}
+  \small Encoder and decoder differ in which token positions may supply information.
+  \begin{columns}[T,onlytextwidth]
+  \begin{column}{0.48\linewidth}
+    \begin{block}{Encoder: represent an input}
+      \small Read the supplied text and produce a contextual vector for \textbf{every token}.
+    \end{block}
+    \centering
+    \begin{tikzpicture}[font=\small, >=Stealth,
+      t/.style={draw=AMU_dk2, fill=AMU_acc5!35, rounded corners=3pt, minimum width=1.25cm, minimum height=0.7cm}]
+      \node[t] (a) at (0,0) {red};
+      \node[t] (b) at (1.9,0) {toy};
+      \node[t] (c) at (3.8,0) {robot};
+      \draw[<->, thick, AMU_acc1] (a) -- (b);
+      \draw[<->, thick, AMU_acc1] (b) -- (c);
+      \draw[<->, thick, AMU_acc1] (a.north) to[out=55,in=125] (c.north);
+    \end{tikzpicture}
+    \par\vspace{0.3em}
+    \raggedright\small Each token can use \textbf{both sides} of the input. Useful for classification and search.
+  \end{column}
+  \begin{column}{0.48\linewidth}
+    \begin{block}{Decoder: prepare the next-token prediction}
+      \small Represent the text so far; the model uses these vectors to predict the next token.
+    \end{block}
+    \centering
+    \begin{tikzpicture}[font=\small, >=Stealth,
+      t/.style={draw=AMU_dk2, fill=AMU_lt2!65, rounded corners=3pt, minimum width=1.25cm, minimum height=0.7cm}]
+      \node[t] (a) at (0,0) {red};
+      \node[t] (b) at (1.9,0) {toy};
+      \node[t] (c) at (3.8,0) {robot};
+      \draw[->, thick, AMU_acc1] (a) -- (b);
+      \draw[->, thick, AMU_acc1] (b) -- (c);
+      \draw[->, thick, AMU_acc1] (a.north) to[out=55,in=125] (c.north);
+    \end{tikzpicture}
+    \par\vspace{0.3em}
+    \raggedright\small Each token can use \textbf{itself and earlier tokens}. Later positions are blocked.
+  \end{column}
+  \end{columns}
+  \par\vspace{0.3em}
+  \small Arrows show permitted information flow; arrows from a token to itself are omitted.
+  \note{Arrows indicate information reaching a position, not an execution order. Self-links are omitted. An encoder processes the complete supplied input; this does not imply that it knows future events outside that input. A decoder's causal restriction applies during training too, when all target tokens are available in the training example, so it cannot copy the token it is meant to predict. During generation future output tokens do not yet exist. In GPT, the prompt and generated continuation form one sequence processed by decoder blocks; the word decoder does not require a separate encoder. These are architectural roles, not the character-token decoding operation encountered during tokenisation.}
 \end{frame}
 
+\begin{frame}{A Transformer Model Contains Stacks of Blocks}
+  \small A \textbf{Transformer} is a neural network built from repeated layers called \textbf{blocks}.
+  \par\vspace{0.3em}
+  An encoder and a decoder each contain several blocks. The original model combines both.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    b/.style={draw=AMU_dk2, fill=AMU_dk2!15, rounded corners=3pt,
+      minimum width=1.55cm, minimum height=0.8cm, align=center},
+    io/.style={draw=AMU_dk2, fill=AMU_acc5!35, rounded corners=3pt,
+      text width=2.0cm, minimum height=0.8cm, align=center},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \draw[AMU_acc1, rounded corners=4pt] (2,-0.65) rectangle (8,0.65);
+    \draw[AMU_acc1, rounded corners=4pt] (2,-2.35) rectangle (8,-1.05);
+    \node[above, font=\bfseries] at (5,0.65) {Encoder};
+    \node[below, font=\bfseries] at (5,-2.35) {Decoder};
+    \node[io] (input) at (0.5,0) {Input text};
+    \node[b] (e1) at (3,0) {Block 1};
+    \node[b] (e2) at (5,0) {Block 2};
+    \node[b] (e3) at (7,0) {$\cdots$};
+    \node[io] (encoded) at (10,0) {Encoded\\input vectors};
+    \node[io, fill=AMU_lt2!65] (prefix) at (0.5,-1.7) {Output text\\so far};
+    \node[b, fill=AMU_lt2!35] (d1) at (3,-1.7) {Block 1};
+    \node[b, fill=AMU_lt2!35] (d2) at (5,-1.7) {Block 2};
+    \node[b, fill=AMU_lt2!35] (d3) at (7,-1.7) {$\cdots$};
+    \node[io, fill=AMU_lt2!65] (decoded) at (10,-1.7) {Output vectors};
+    \draw[arrow] (input) -- (e1);
+    \draw[arrow] (e1) -- (e2);
+    \draw[arrow] (e2) -- (e3);
+    \draw[arrow] (e3) -- (encoded);
+    \draw[arrow] (prefix) -- (d1);
+    \draw[arrow] (d1) -- (d2);
+    \draw[arrow] (d2) -- (d3);
+    \draw[arrow] (d3) -- (decoded);
+    \draw[arrow] (encoded.south) -- (10,-0.85) -- (3,-0.85) -- (d1.north);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{Block}: one layer inside a stack. \textbf{Encoder--decoder}: the complete two-stack arrangement.
+  \par\vspace{0.3em}
+  BERT uses an encoder alone; GPT uses a decoder alone. An output layer turns decoder vectors into next-token probabilities.
+  \note{The diagram shows the hierarchy, not all internal connections. In an encoder-decoder Transformer, encoder outputs are available to the cross-attention sublayer of each decoder block; the single connecting arrow abbreviates those connections. The encoder and decoder have separate learned parameters, and different blocks have different parameters. Block means one repeated layer, not one encoder-decoder pair. The original Transformer had six encoder layers and six decoder layers. GPT-style decoder-only models use prompt and continuation as one sequence, without this separate encoder input. Embedding and position information are omitted here and are shown inside the block later. Source: Attention Is All You Need, Sections 3 and 3.1.}
+\end{frame}
 
+\begin{frame}{Why a Token Needs Context}
+  \small Our example throughout: \textbf{\texttt{red toy robot}}.
+  \par\vspace{0.3em}
+  \texttt{robot} is broad. \texttt{toy} makes it a plaything; \texttt{red} specifies its colour.
+  \begin{center}
+  \begin{tikzpicture}[font=\small, >=Stealth]
+    \draw[->, AMU_dk2!30] (0,0) -- (8,0);
+    \draw[->, AMU_dk2!30] (0,0) -- (0,3.1);
+    \draw[->, line width=1.5pt, AMU_dk2] (0,0) -- (5,0.55);
+    \node[anchor=west, align=left] at (5.25,0.55) {Initial lookup vector\\for \texttt{robot}};
+    \draw[->, line width=2pt, AMU_acc6] (5,0.55) -- (2,2.6);
+    \node[anchor=west, align=left, text=AMU_acc6] at (4.3,1.7) {Add information\\from \texttt{red} and \texttt{toy}};
+    \draw[->, line width=1.5pt, AMU_acc1, dashed] (0,0) -- (2,2.6);
+    \node[anchor=west, align=left] at (2.45,2.6) {Contextual vector\\\texttt{robot} as a red toy};
+    \fill[AMU_dk2] (5,0.55) circle (2pt);
+    \fill[AMU_acc1] (2,2.6) circle (2pt);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{Attention} computes a weighted combination of information from token vectors.
+  \par\vspace{0.2em}
+  \textbf{Self-attention} uses tokens from the \textbf{same sequence}. The text stays the same; its numerical representations change.
+  \par\vspace{0.2em}
+  {\scriptsize Schematic view of a high-dimensional vector space.
+  Inspired by \href{https://www.3blue1brown.com/lessons/attention/}{3Blue1Brown}.
+  \href{../visualizations/attention/index.html}{Open the animated walkthrough}.}
+  \note{Use red toy robot throughout this section. Toy changes the kind of object, rather than merely its colour. The initial lookup embedding of robot does not depend on preceding red and toy. Position information also enters a real model, but this figure isolates contextual change. The plane and directions are schematic, not measured embedding coordinates or literal semantic axes. The purple arrow is an added contribution; the dashed vector is original plus contribution. Later numerical matrices are chosen for arithmetic and do not measure how much meaning comes from toy. The example illustrates information from modifying words, not a grammatical rule followed by every attention head. Attention incorporates supplied context; it does not create missing evidence. We return to this distinction after decoding: prompts must supply relevant context, and outputs require checks. Inspired by Grant Sanderson's progression from contextual change to queries, keys, values and addition. Optional video: DeepLearning.AI, The Main Ideas Behind Transformers and Attention (4 minutes).}
+\end{frame}
 
+\begin{frame}{Three Vectors, Three Roles: Query, Key, Value}
+  \small A learned \textbf{matrix multiplication} transforms each current token vector in three different ways.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, text width=2.3cm, minimum height=0.9cm},
+    result/.style={box, text width=4cm},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!25] (input) at (0,0) {Current vector\\for \texttt{robot}};
+    \node[box, fill=AMU_dk2!10] (qmap) at (4,1.25) {Query matrix};
+    \node[box, fill=AMU_dk2!10] (kmap) at (4,0) {Key matrix};
+    \node[box, fill=AMU_dk2!10] (vmap) at (4,-1.25) {Value matrix};
+    \node[result, fill=AMU_lt2!35] (query) at (8.7,1.35) {\textbf{Query}\\Compare this position\\with candidate inputs};
+    \node[result, fill=AMU_acc5!25] (key) at (8.7,0) {\textbf{Key}\\Compare this input\\with a query};
+    \node[result, fill=AMU_dk2!15] (value) at (8.7,-1.35) {\textbf{Value}\\Information this input\\can contribute};
+    \foreach \map/\out in {qmap/query,kmap/key,vmap/value} {
+      \draw[arrow] (input.east) -- (\map.west);
+      \draw[arrow] (\map.east) -- (\out.west);
+    }
+  \end{tikzpicture}
+  \end{center}
+  \small Repeat for \texttt{red} and \texttt{toy}, using the \textbf{current vectors, before the update}.
+  \par\vspace{0.3em}
+  With one token vector per row in $X$: \quad $Q=XW_Q$, \quad $K=XW_K$, \quad $V=XW_V$.
+  \par\vspace{0.2em}
+  {\scriptsize One calculation with its own $W_Q,W_K,W_V$ is an \textbf{attention head}. Training learns these matrices; inference keeps them fixed.}
+  \note{Define each symbol before proceeding: X stacks the current representations as rows. Q, K and V stack the resulting queries, keys and values in the same order. W denotes a learned matrix, not a set of attention weights. Matrix multiplication forms weighted sums of the coordinates, using the coefficients learned during training. Query and key are numerical vectors for comparison, not literal questions and answers. A position contributes through its value vector, which is generally different from its current representation. For the shared toy example, X=I3, WQ=[[1,0],[0,1],[1,1]], WK=[[2,0],[0,2.3],[0,0.2]], WV=I3, and the attention output projection is identity. These are illustrative parameters, not a measured model trace. The animation shows these matrix multiplications one entry at a time.}
+\end{frame}
 
-\begin{frame}{Self-Attention: What and Why}
+\begin{frame}{Compare \texttt{robot}'s Query with Each Key}
+  \small To compute the attention output at \texttt{robot}, use \textbf{its query} and the keys of the available inputs.
+  \par\vspace{0.3em}
+  \textbf{Dot product}: multiply corresponding coordinates, then add. Our toy query is $[1,1]$.
+  \begin{center}
+  {\small\renewcommand{\arraystretch}{1.6}
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Input} & \textbf{Key} & \textbf{Query--key comparison} & \textbf{Score} \\
+    \midrule
+    \texttt{red} & $[2,0]$ & $1\times2+1\times0$ & $2.0$ \\
+    \texttt{toy} & $[0,2.3]$ & $1\times0+1\times2.3$ & $2.3$ \\
+    \texttt{robot} & $[0,0.2]$ & $1\times0+1\times0.2$ & $0.2$ \\
+    \bottomrule
+  \end{tabular}}
+  \end{center}
+  \small A larger score will give the corresponding input more weight in this attention calculation.
+  \par\vspace{0.3em}
+  Here the example favours \texttt{red} and \texttt{toy}: they describe the \texttt{robot}.
+  \par\vspace{0.3em}
+  {\scriptsize Toy learned matrices produce these scores. They illustrate a possible pattern, not a fixed grammatical rule.}
+  \note{Walk through the toy entry first: both vectors have two coordinates, so [1,1] dot [0,2.3] equals 1 times 0 plus 1 times 2.3. The model is not using manually written semantic tags; these keys and the query result from the illustrative matrix multiplications. This explains matching concretely without pretending each coordinate has a word-like meaning. A high score only predicts a larger mixing coefficient in this head; it is not a measure of retained meaning or a general explanation of the model's behaviour. The next slide repeats these comparisons for all positions at once.}
+\end{frame}
+
+\begin{frame}{All Comparisons in One Matrix Multiplication}
+  \small Put queries and keys in rows, in the order \texttt{red}, \texttt{toy}, \texttt{robot}.
+  \par\vspace{0.3em}
+  \textbf{Transpose} (${}^\top$) turns the key rows into columns. Then $QK^\top$ compares every query with every key.
+  \begin{center}
+  \[
+    \underbrace{\begin{bmatrix}1&0\\0&1\\\color{AMU_acc1}1&\color{AMU_acc1}1\end{bmatrix}}_{Q:\;3\times2}
+    \quad
+    \underbrace{\begin{bmatrix}2&0&0\\0&2.3&0.2\end{bmatrix}}_{K^\top:\;2\times3}
+    \;=\;
+    \underbrace{\begin{bmatrix}2&0&0\\0&2.3&0.2\\\color{AMU_acc1}2&\color{AMU_acc1}2.3&\color{AMU_acc1}0.2\end{bmatrix}}_{\text{comparison scores}:\;3\times3}
+  \]
+  \end{center}
+  \small \textbf{One entry}: row \texttt{robot}, column \texttt{toy} is the comparison $[1,1]\cdot[0,2.3]=2.3$.
+  \par\vspace{0.3em}
+  \textbf{One row}: the highlighted row contains all three comparisons from the previous slide.
+  \par\vspace{0.3em}
+  Before calculating weights, divide the scores by $\sqrt{2}$ because the query/key vectors have two coordinates.
+  \note{Dimensions are rows by columns. The inner dimension 2 agrees, so each output entry is a two-coordinate dot product. Output rows identify receiving/query positions; output columns identify supplying/key positions. Explain one highlighted cell before a whole highlighted row. The division by the square root of query/key dimension is the standard scale, which controls how score magnitudes grow with vector dimension. In a real model, Q and K generally have many coordinates. Matrix multiplication is an efficient way to do the same independent comparisons, not a different attention algorithm. The animated matrix view highlights the row, column and accumulated products.}
+\end{frame}
+
+\begin{frame}{From Scores to Attention Weights}
+  \small At \texttt{robot}, the scaled scores are approximately $[1.414,\;1.626,\;0.141]$.
+  \par\vspace{0.3em}
+  \textbf{Softmax}: exponentiate each score, then divide by the row total. The weights are positive and sum to one.
+  \begin{center}
+  \begin{tikzpicture}[font=\small, >=Stealth]
+    \foreach \word/\weight/\y in {red/39.7/0,toy/49.1/-0.65,robot/11.1/-1.3} {
+      \node[anchor=east] at (0,\y) {\texttt{\word}};
+      \fill[AMU_dk2!45, rounded corners=2pt] (0.25,\y-0.18) rectangle ({0.25+\weight*0.10},\y+0.18);
+      \node[anchor=west] at ({0.4+\weight*0.10},\y) {\weight\%};
+    }
+  \end{tikzpicture}
+  \end{center}
+  \small These are weights on the \textbf{value vectors} used for \texttt{robot}'s attention output.
+  \par\vspace{0.3em}
+  Each position has its own weights. A \textbf{causal mask} forbids later inputs: \texttt{toy} may use \texttt{red} and itself, but cannot use \texttt{robot}.
+  \par\vspace{0.3em}
+  {\scriptsize Displayed percentages rounded. Blocked positions receive zero weight. These are not next-token probabilities.}
+  \note{Explain mask before normalisation: set forbidden scores to minus infinity, then apply softmax row by row. For robot all three input positions are allowed. Its exponentials are approximately [4.113250,5.085257,1.151910], whose total is 10.350417. Exact weights are [0.3973994679,0.4913093772,0.1112911550]. The full causal attention matrix is [[1,0,0],[0.1643315930,0.8356684070,0],[0.3973994679,0.4913093772,0.1112911550]]. Rounded displayed percentages need not add to exactly 100 percent. During next-token training, later tokens are available in the training sentence but are masked to prevent reading the answer; during generation future tokens do not exist yet. These coefficients are not percentages of meaning or causal importance.}
+\end{frame}
+
+\begin{frame}{Combine Values: The Attention Contribution}
+  \small The \textbf{value vectors} supply the information. Multiply each by its attention weight, then add.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, minimum width=2.5cm, minimum height=0.85cm},
+    arrow/.style={->, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!25] (red) at (0,0) {\texttt{red}\\value $[1,0,0]$};
+    \node[box, fill=AMU_acc5!25] (toy) at (4,0) {\texttt{toy}\\value $[0,1,0]$};
+    \node[box, fill=AMU_acc5!25] (robot) at (8,0) {\texttt{robot}\\value $[0,0,1]$};
+    \node[box, text width=4.4cm, fill=AMU_dk2!15] (out) at (4,-1.9)
+      {Attention contribution\\at \texttt{robot}\\$[0.397,\;0.491,\;0.111]$};
+    \draw[arrow, line width=1.5pt] (red.south) -- node[above, sloped] {$0.397$} (out.north west);
+    \draw[arrow, line width=2pt] (toy.south) -- node[right] {$0.491$} (out.north);
+    \draw[arrow, line width=0.6pt] (robot.south) -- node[above, sloped] {$0.111$} (out.north east);
+  \end{tikzpicture}
+  \end{center}
+  \small As a matrix product, one row of weights combines the three rows of $V$:
+  \[
+    \begin{bmatrix}0.397&0.491&0.111\end{bmatrix}
+    \begin{bmatrix}1&0&0\\0&1&0\\0&0&1\end{bmatrix}
+    =\begin{bmatrix}0.397&0.491&0.111\end{bmatrix}.
+  \]
+  {\scriptsize Toy value/output maps are identity; numbers rounded. This contribution has not yet been added to the original vector.}
+  \note{The full matrix product is AV: the attention matrix A has one weight row for each receiving position, and V has one value row for each supplying position. For the displayed robot row, the first result coordinate is 0.397 times 1 plus 0.491 times 0 plus 0.111 times 0. Repeat for the other coordinates if needed. Values happen to equal input representations because the toy learned value matrix is identity; real values are learned transformations. One attention head is one such query/key/value calculation. Practical models combine multiple heads and apply an output projection before residual addition; the output projection is identity in our toy example. These coordinate axes are not word meanings or literal semantic features.}
+\end{frame}
+
+\begin{frame}{Add Context to the Existing Representation}
+  \small The \textbf{residual connection} adds the attention contribution to the vector that entered this stage.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, text width=3.2cm, minimum height=0.9cm},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!25] (original) at (0,1) {Original vector\\at \texttt{robot}\\$[0,0,1]$};
+    \node[box, fill=AMU_dk2!15] (contribution) at (0,-1) {Attention contribution\\$[0.397,0.491,0.111]$};
+    \node[circle, draw=AMU_dk2, minimum size=0.7cm, inner sep=0pt] (add) at (3.4,0) {$+$};
+    \node[box, fill=AMU_lt2!65] (result) at (7.4,0) {Vector after addition\\$[0.397,0.491,1.111]$};
+    \draw[arrow] (original.east) -| (add.north);
+    \draw[arrow] (contribution.east) -| (add.south);
+    \draw[arrow] (add) -- (result);
+  \end{tikzpicture}
+  \end{center}
+  \small The original vector has a \textbf{direct path} to the addition. Attention supplies an extra contribution.
+  \par\vspace{0.3em}
+  For every position together: \quad $\text{vectors after addition}=X+AV$ \quad in this toy model.
+  \par\vspace{0.3em}
+  The token is still \texttt{robot}. Its representation now incorporates context from \texttt{red} and \texttt{toy}.
+  \par\vspace{0.2em}
+  {\scriptsize One head, identity output map, normalisation omitted.
+  \href{https://arxiv.org/abs/1706.03762}{Original paper, Section 3.1}.}
+  \note{Keep the attention contribution distinct from the representation after addition. A weight of 0.111 on robot's value is not the proportion of its original representation retained in the complete update; the original input also follows the direct residual path. The numbers in the final vector are coordinates and need not sum to one. This is the attention residual result, not the output of a complete Transformer block: feed-forward processing and normalisation remain. In the full architecture, use X plus the projected combined head outputs; the toy identity output map makes that contribution exactly AV. The geometric opening slide illustrated this original-plus-change idea without specifying coordinates.}
+\end{frame}
+
+\begin{frame}{Inside One Transformer Block}
+  \small Attention and feed-forward each \textbf{add a contribution to their input vectors}.
+  \par\vspace{0.3em}
+  \textbf{Position information} records where each token occurs in the sequence.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center,
+      text width=1.8cm, minimum height=1.1cm, inner sep=4pt},
+    add/.style={circle, draw=AMU_dk2, fill=white, minimum size=0.55cm, inner sep=0pt},
+    arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!35] (input) at (0,0) {Current\\token vectors};
+    \node[box, fill=AMU_lt2!65, text width=2.3cm] (attention) at (3,0) {\textbf{Self-attention}\\Combine values\\across positions};
+    \node[add] (add1) at (4.8,0) {$+$};
+    \node[box, fill=AMU_dk2!15, text width=2.3cm] (ff) at (7,0) {\textbf{Feed-forward}\\Process each\\vector};
+    \node[add] (add2) at (8.8,0) {$+$};
+    \node[box, fill=AMU_acc5!35] (output) at (11,0) {Updated\\token vectors};
+    \draw[arrow] (input) -- (attention);
+    \draw[arrow] (attention) -- (add1);
+    \draw[arrow] (add1) -- (ff);
+    \draw[arrow] (ff) -- (add2);
+    \draw[arrow] (add2) -- (output);
+    \draw[arrow, draw=AMU_dk2] (input.north) -- (0,1.65) --
+      node[above, font=\footnotesize] {copy input vectors} (4.8,1.65) -- (add1.north);
+    \draw[arrow, draw=AMU_dk2] (5.5,0) -- (5.5,1.65) --
+      node[above, font=\footnotesize] {copy vectors} (8.8,1.65) -- (add2.north);
+  \end{tikzpicture}
+  \end{center}
+  \small The feed-forward stage uses the \textbf{same neural network separately at each position}.
+  \par\vspace{0.3em}
+  Pass the updated vectors to the next block. Select the next token \textbf{after the final decoder block}.
+  \par\vspace{0.3em}
+  {\scriptsize Normalisation (rescaling vector values) is omitted. Diagram shows an encoder or GPT-style decoder block.}
+  \note{Unlike the previous serial drawing, both residual paths are now visible. The first bypass carries the input to attention; the second carries the result after that addition to the feed-forward addition. Each plus is elementwise vector addition, not token concatenation or token selection. This is the main information flow in an encoder or GPT-style decoder block, with normalisation omitted. Position information is available in the initial representations or attention operations; the drawing does not imply that position vectors are added at every block. Multiple attention heads produce separate mixtures and an output projection combines them before the first addition. In the original Transformer, layer normalisation follows each residual addition; many modern decoder architectures normalise before attention and feed-forward. Encoder-decoder decoder blocks add cross-attention and its residual connection, introduced later. Stacked blocks are separate from repeated generation steps. Sources: Vaswani et al., Section 3.1; Jay Alammar, The Illustrated Transformer, The Residuals. Optional companion video: DeepLearning.AI, How Transformer LLMs Work, The Transformer Block (6 minutes).}
+\end{frame}
+
+\begin{frame}{The Next Block Computes New Queries and Keys}
+  \small After attention and feed-forward, the next block receives \textbf{richer token representations}.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, text width=3.1cm, minimum height=1.25cm},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_lt2!65] (updated) at (0,0) {\texttt{robot}\\with context from\\\texttt{red} and \texttt{toy}};
+    \node[box, fill=AMU_dk2!15] (maps) at (4.5,0) {Next block's\\learned query, key,\\and value matrices};
+    \node[box, fill=AMU_acc5!25] (new) at (9,0) {New query\\New key\\New value};
+    \draw[arrow] (updated) -- (maps);
+    \draw[arrow] (maps) -- (new);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{Within one block}: current vectors $\rightarrow$ queries/keys/values $\rightarrow$ attention contribution $\rightarrow$ vector update.
+  \par\vspace{0.4em}
+  \textbf{In the next block}: the updated vectors produce new queries, keys and values. Then a new attention calculation starts.
+  \par\vspace{0.4em}
+  The token labels stay \texttt{red toy robot}. The computed vectors change; the trained matrices stay fixed during inference.
+  \note{This explicitly addresses the timing misconception. The current block's queries and keys are not recomputed from its own output before that attention calculation finishes. All Q/K/V in one attention stage derive from the same incoming representations. A later block gets the richer representations after feed-forward and normalisation and uses its own learned projection matrices. Different blocks generally have different learned parameters. Generation steps are separate: after the final block, the output layer predicts a new token, which is then appended for another model pass. The animation's final stage shows the next-block computation symbolically to avoid implying shared weights across blocks.}
+\end{frame}
+
+\begin{frame}{Using a Decoder to Generate the Next Token}
+  \small At each step, use the text so far (the \textbf{prefix}) to predict one more token.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small,
+    token/.style={draw=AMU_dk2, fill=AMU_acc5!35, rounded corners=3pt,
+      minimum width=1.2cm, minimum height=0.65cm, align=center},
+    current/.style={token, fill=AMU_dk2!15, line width=1.2pt},
+    block/.style={token, fill=AMU_lt2!65, text width=2.1cm, minimum height=0.85cm},
+    result/.style={token, fill=AMU_lt2!65},
+    probabilities/.style={token, fill=AMU_dk2!10, text width=1.65cm,
+      font=\footnotesize, minimum height=0.85cm},
+    arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+    \node[font=\bfseries\small] at (2.1,0.85) {Input prefix};
+    \node[font=\bfseries\small] at (6,0.85) {Decoder};
+    \node[font=\bfseries\small] at (8.6,0.85) {Output layer};
+    \node[font=\bfseries\small] at (11,0.85) {Next token};
+    \node[anchor=east] at (-0.25,0) {Step 1};
+    \node[current] (a1) at (0.6,0) {red};
+    \node[block] (b1) at (6,0) {Decoder\\blocks};
+    \node[result] (o1) at (11,0) {toy};
+    \draw[arrow] (a1) -- (b1);
+    \node[probabilities] (p1) at (8.6,0) {Next-token\\probabilities};
+    \draw[arrow] (b1) -- (p1);
+    \draw[arrow] (p1) -- node[above, font=\scriptsize] {choose} (o1);
+    \node[anchor=east] at (-0.25,-1.2) {Step 2};
+    \node[token] (a2) at (0.6,-1.2) {red};
+    \node[current] (c2) at (2.1,-1.2) {toy};
+    \node[block] (b2) at (6,-1.2) {Decoder\\blocks};
+    \node[result] (o2) at (11,-1.2) {robot};
+    \draw[arrow] (a2.south) to[out=-60,in=-120] (c2.south);
+    \draw[arrow] (c2) -- (b2);
+    \node[probabilities] (p2) at (8.6,-1.2) {Next-token\\probabilities};
+    \draw[arrow] (b2) -- (p2);
+    \draw[arrow] (p2) -- node[above, font=\scriptsize] {choose} (o2);
+    \node[anchor=east] at (-0.25,-2.4) {Step 3};
+    \node[token] (a3) at (0.6,-2.4) {red};
+    \node[token] (c3) at (2.1,-2.4) {toy};
+    \node[current] (s3) at (3.6,-2.4) {robot};
+    \node[block] (b3) at (6,-2.4) {Decoder\\blocks};
+    \node[result] (o3) at (11,-2.4) {moves};
+    \draw[arrow] (a3.south) to[out=-35,in=-145] (s3.south);
+    \draw[arrow] (c3.south) to[out=-60,in=-120] (s3.south);
+    \draw[arrow] (s3) -- (b3);
+    \node[probabilities] (p3) at (8.6,-2.4) {Next-token\\probabilities};
+    \draw[arrow] (b3) -- (p3);
+    \draw[arrow] (p3) -- node[above, font=\scriptsize] {choose} (o3);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{Blue outline}: the last input position; its final vector goes to the output layer.
+  \par\vspace{0.2em}
+  Append the chosen token to the prefix, then run the next step.
+  \par\vspace{0.2em}
+  {\scriptsize Illustrative sequence; curved arrows show available context. Weights depend on the input.}
+  \note{Walk through each row as in the earlier RNN generation slide. First red predicts toy. Then the newly appended toy can use red and itself to predict robot. Finally robot can use red, toy, and itself to predict moves. These continuations are illustrative, not uniquely determined. The curved arrows indicate permitted information flow, not particular numeric weights; self-contributions are implicit. In each block all prefix positions are updated with their permitted context. The last updated vector is projected to vocabulary scores and the decoding rule chooses the next token. Causal masking excludes future positions; other positions cannot see later tokens in the prefix. The diagram groups repeated blocks and shows the output layer and token choice separately. It omits start tokens, residual connections, normalisation, and cache reuse. Generation advances sequentially even though positions can be processed in parallel during training.}
+\end{frame}
+
+\begin{frame}{Encoder--Decoder: Read One Text, Write Another}
+  \small For translation, the input sentence is already available; the output is written one token at a time.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, text width=3.0cm, minimum height=0.85cm, inner sep=6pt},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!35] (source) at (0,0) {\textbf{Complete input}\\red toy robot};
+    \node[box, fill=AMU_dk2!15] (enc) at (0,-1.5) {\textbf{Encoder}\\Represent\\input tokens};
+    \node[box, fill=AMU_lt2!65] (prefix) at (5.5,0) {\textbf{Output so far}\\robot jouet};
+    \node[box, fill=AMU_dk2!15] (dec) at (5.5,-1.5) {\textbf{Decoder}\\Use output so far + input};
+    \node[box, text width=2cm, fill=AMU_lt2!65] (next) at (10,-1.5) {\textbf{Next token}\\rouge};
+    \draw[arrow] (source) -- (enc);
+    \draw[arrow] (prefix) -- (dec);
+    \draw[arrow] (enc.east) -- node[above, align=center, font=\footnotesize] {\shortstack{Cross-\\attention}} (dec.west);
+    \draw[arrow] (dec) -- (next);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{Cross-attention} uses two sequences: queries from the decoder, keys and values from the encoder.
+  \par\vspace{0.3em}
+  The decoder can use the complete input sentence and only the output written so far.
+  \par\vspace{0.3em}
+  Cross-attention adds a stage in decoder blocks. Their self-attention still blocks later \emph{output} positions.
+  \note{Return to the earlier RNN translation diagram: the encoder and decoder roles remain, but attention gives the decoder direct access to the input token representations rather than relying on a single final RNN state. Decoder self-attention uses the generated output prefix; cross-attention uses queries from the decoder and keys and values from encoder outputs. The complete source is permitted, including positions on both sides of the relevant source token. The decoder cannot look ahead in its own target sequence. The original 2017 Transformer combines an encoder and a decoder. BERT uses encoder blocks; GPT uses decoder blocks without this separate encoder or cross-attention stage. Words stand in for tokens in the illustration; actual tokenisation may split rouge.}
+\end{frame}
+
+\begin{frame}{From Next-Token Probabilities to an Answer}
+  \small \textbf{Inference}: use the trained model on a new input, without changing its weights.
+  \par\vspace{0.5em}
+  In our example, the model has read \textbf{``red toy robot''}. Several continuations are possible.
   \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.6\linewidth}
-      \begin{itemize}
-        \item \textbf{What}: Each token forms \emph{queries}, \emph{keys}, and \emph{values}: $Q = HW_Q$, $K = HW_K$, $V = HW_V$.
-        \item \textbf{Computation}: 
-          \[ \text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V. \]
-        \item \textbf{Why softmax?} Turns similarity scores into a probability distribution to weight values.
-        \item \textbf{Why scale by $\sqrt{d_k}$?} Prevents saturation of softmax for large $d_k$, stabilizing training.
-         \end{itemize}
+    \begin{column}{0.47\textwidth}
+      \begin{center}
+      \begin{tikzpicture}[font=\small]
+        \node[anchor=west,font=\small\bfseries] at (0,0.5) {Illustrative next-token probabilities};
+        \foreach \word/\prob/\y in {moves/60/0,stops/25/-0.65,turns/10/-1.3,other/5/-1.95} {
+          \node[anchor=east] at (1,\y) {\word};
+          \fill[AMU_dk2!45,rounded corners=2pt] (1.15,\y-0.17) rectangle ({1.15+\prob*0.05},\y+0.17);
+          \node[anchor=west,font=\footnotesize] at ({1.25+\prob*0.05},\y) {\prob\%};
+        }
+      \end{tikzpicture}
+      \end{center}
     \end{column}
-    \begin{column}{0.3\linewidth}
-      \begin{exampleblock}{Tiny intuition}
-        'The cat sat' $\to$ stronger weights to nearby/related tokens (e.g., 'cat' when processing 'sat').
-      \end{exampleblock}
+    \begin{column}{0.50\textwidth}
+      \small \textbf{Decoding}: the rule for choosing a token from these probabilities.
+      \begin{itemize}
+        \item \textbf{Greedy}: choose the most likely token; here, \textbf{moves}.
+        \item \textbf{Sampling}: draw a token at random, using the probabilities. \textbf{stops} is possible too.
+      \end{itemize}
     \end{column}
   \end{columns}
+  \vspace{0.5em}
+  \small Append the chosen token, calculate new probabilities, and repeat until the model ends the answer or reaches a limit.
+  \par\vspace{0.4em}
+  \textbf{Likely text is not necessarily correct text.}
+  \note{Reconnect to the earlier next-token walkthrough: its arrows showed one chosen continuation, not the only possible one. The four bars are invented for teaching; other aggregates all remaining tokens. Greedy selection picks the largest probability at each step. Sampling is a weighted random draw. Neither changes the trained weights. A token is a text piece, not necessarily a word. The model may choose an end-of-sequence token; a caller may also stop generation. Greedy decoding is distinct from the decoder architecture: one is a selection rule, the other a kind of Transformer.}
 \end{frame}
 
-\begin{frame}{The Transformer at a Glance}
-  \begin{itemize}
-    \item \textbf{Encoder--Decoder (original paper)}: encoder builds contextual representations; decoder attends to both past outputs (self-attention) and encoder outputs (cross-attention).
-    \item \textbf{Encoder-only (BERT family) - representation models}: uses only bidirectional self-attention; effective for understanding tasks.
-    \item \textbf{Decoder-only (GPT family) - generative models}: uses only causal/masked self-attention with a mask to prevent peeking ahead; simpler and efficient for generation.
-    \item Common building blocks across both: embeddings + positional info, scaled dot-product attention, multi-head projections, residual connections, layer normalization, feed-forward networks.
-  \end{itemize}
+\begin{frame}{Generation Settings You Can Experiment With}
+  \small These settings control token selection and output length; they do not retrain the model.
+  \par\vspace{0.3em}
+  {\footnotesize\renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{4.6cm}@{}}
+    \toprule
+    \textbf{Setting} & \textbf{What it changes} & \textbf{Try it on our example} \\
+    \midrule
+    Temperature & Lower: concentrate probability on likely tokens. Higher: spread it more widely. & Repeat at low and high values. Compare output variety. \\
+    Top-$p$ & Keep likely tokens until their combined probability reaches $p$; sample from that set. & At $p=0.8$, keep \textbf{moves} and \textbf{stops}: $0.60+0.25=0.85$. \\
+    Output limit & Maximum number of new tokens to generate. The answer may stop earlier. & A low limit can cut an answer off before it finishes. \\
+    \bottomrule
+  \end{tabular}\par}
+  \vspace{0.3em}
+  \small \textbf{Context window}: the model's capacity for input and generated tokens together. A longer prompt leaves less room for output.
+  \par\vspace{0.4em}
+  Change one setting at a time and record its effect on the output.
+  \par\vspace{0.3em}
+  {\scriptsize Available settings and parameter names depend on the model/API. \href{https://huggingface.co/docs/transformers/main/en/main_classes/text_generation}{Generation reference}.}
+  \note{Temperature and top-p apply when sampling is used. Temperature reshapes the probability distribution before selection; top-p discards its low-probability tail and renormalises the retained probabilities. The top-p example uses the unmodified illustrative probabilities on the previous slide; retained moves and stops are sampled with probabilities 60/85 and 25/85. Temperature 1 preserves the distribution before other sampling adjustments. Lower temperature does not ensure factual accuracy, and fixed settings do not guarantee identical answers from a hosted service. Do not ask students to memorise universal recommended values: support and permitted ranges vary by model/API. In Transformers the output cap is max_new_tokens; hosted APIs may use other names, and some count internal reasoning in their output budget. Context capacity and output caps can be separate limits; reasoning and tool messages may also consume budget. Top-k and engineering optimisations are deliberately outside this introductory lesson.}
 \end{frame}
 
-\begin{frame}{Neural Machine Translation with Encoder-Decoder RNN}
-  \centering
-  \begin{tikzpicture}[
-    box/.style={rectangle, draw, rounded corners=2pt, minimum height=0.8cm, minimum width=1.5cm, align=center, font=\small},
-    inputbox/.style={box, fill=blue!10},
-    outputbox/.style={box, fill=green!10},
-    encoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=cyan!20},
-    decoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=pink!20},
-    label/.style={font=\small, align=left, text width=2cm}
-  ]
-
-    % Input sequence
-    \node[inputbox] (i1) at (1,3.5) {I};
-    \node[inputbox] (i2) at (3,3.5) {love};
-    \node[inputbox] (i3) at (5,3.5) {robots};
-
-   
-
-    % Encoder
-    \node[encoderbox, fill=AMU_acc5!80] (enc) at (3,1.5) {
-      \textbf{Encoder (RNN)}\\
-      \small Task: representing language
-    };
-  
-    % Decoder
-    \node[decoderbox,  fill=AMU_acc6!60] (dec) at (3,-0.5) {
-      \textbf{Decoder (RNN)}\\
-      \small Task: generating language
-    };
-   
-
-    % Arrows from encoder to decoder
-    \draw[dotted] (enc.south west) -- (dec.north west);
-    \draw[dotted] (enc.south east) -- (dec.north east);
-    \draw[<->] (enc.south) -- (dec.north) node[midway, right] {}; % Context connection
-
-    % Output sequence
-    \node[outputbox] (o1) at (1,-2.5) {Ich};
-    \node[outputbox] (o2) at (3,-2.5) {liebe};
-    \node[outputbox] (o3) at (5,-2.5) {Roboter};
-
- % Arrows from input to encoder
-    \draw[->] (i1) -- (enc);
-    \draw[->] (i2) -- (enc);
-    \draw[->] (i3) -- (enc);
-
-    % Arrows from decoder to output
-    \draw[->] (dec) -- (o1);
-    \draw[->] (dec) -- (o2);
-    \draw[->] (dec) -- (o3);
-
-    % Labels
-    \node[label, left=0.5cm of i1.west] {Input\\sequence};
-    \node[label, left=0.5cm of o1.west] {Output\\sequence};
-
-    % Neural Machine Translation label
-    \node[rotate=90, label, anchor=south] at (-1.5,1) {Neural\\machine\\translation};
-
-    % Dotted border around encoder-decoder
-    \draw[dotted] ([xshift=-0.5cm,yshift=0.5cm]enc.north west) rectangle ([xshift=0.5cm,yshift=-0.5cm]dec.south east);
-
-  \end{tikzpicture}
+\begin{frame}{From Model Mechanics to Working Practice}
+  \small The mechanisms we just studied guide how we prompt, build loops, and verify results.
+  \par\vspace{0.4em}
+  {\footnotesize\renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{7.0cm}@{}}
+    \toprule
+    \textbf{What the model does} & \textbf{What we do in an application} \\
+    \midrule
+    Attention adds information from other token positions. & Supply relevant data, definitions, units, and constraints: \texttt{toy} changes how \texttt{robot} is interpreted. \\
+    Each call has a finite context window. & Select what matters. In a loop, supply current tool results and task progress for the next decision. \\
+    Sampling introduces variation in continuations. & Record settings and repeat tasks to measure variation. Use diversity when it helps the task. \\
+    Next-token probability is not a truth score. & Check sources, recompute numbers, and test code independently. \\
+    \bottomrule
+  \end{tabular}\par}
+  \par\vspace{0.3em}
+  {\scriptsize \href{https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents}{Context engineering};
+  \href{https://huggingface.co/docs/transformers/main/en/generation_strategies}{generation strategies};
+  \href{https://arxiv.org/abs/2509.04664}{Why Language Models Hallucinate}.}
+  \note{This is the bridge from the architecture lesson to Weeks 3--5. Context means the information made available to this model call, not just the instruction sentence. Attention incorporates that information into representations; the application supplies it. More context is not automatically better: choose relevant evidence and keep loop state current. Sampling adds randomness to token selection; greedy decoding chooses the most probable token. Hallucination is a different issue: a high-probability output can be false, even without sampling. Training data, objectives, uncertainty, and evaluation incentives also affect errors; do not imply that a Transformer attention block alone causes hallucination. Kalai et al. analyse statistical and training incentives, rather than deriving all errors from the architecture. Retrieval and execution can supply evidence, but the completion check must assess that evidence. For instance, ask for a calculation using stated units, return tool observations, and test the resulting number against an independent calculation.}
 \end{frame}
 
-\begin{frame}{LLM Model Timeline (2000--2024)}
+\begin{frame}{Hallucinations: Plausible Answers Can Be Wrong}
+  \small A \textbf{hallucination} is a generated claim that is false or unsupported, even if it sounds convincing.
+  \begin{block}{A fluent answer can invent its evidence}
+    \small Asked: ``Find a paper showing that red toy robots improve learning.''\\
+    Generated: ``A 2024 study reports a 32\% improvement.''\\
+    {\footnotesize Invented teaching example: no study or measurement has been supplied or verified.}
+  \end{block}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.47\textwidth}
+      \small \textbf{Why this happens}
+      \begin{itemize}
+        \item Predicting likely text does not check whether a claim is true.
+        \item Training and evaluation can reward guessing instead of admitting uncertainty.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \small \textbf{What we do}
+      \begin{itemize}
+        \item Supply evidence. Open references and check what they actually support.
+        \item Recompute numbers and test code independently. Verify results before an agent acts on them.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.3em}
+  \small \textbf{Randomness and correctness are different:} a deterministic answer can still be wrong.
+  \par\vspace{0.2em}
+  {\scriptsize \href{https://arxiv.org/abs/2509.04664}{Kalai et al., Why Language Models Hallucinate (2025)}.}
+  \note{The fabricated study and percentage are explicitly invented for teaching, not a report of a model experiment or a real result. Ask students what would make the answer usable: a real paper, a checked claim, a relevant study population, and a verified measurement. Distinguish unsupported from false: a claim may happen to be true but is not established by the available evidence. Hallucination is not a consequence of sampling alone. Greedy decoding can select a false high-probability continuation; repeating it reliably does not make it correct. Kalai et al. explain statistical and training/evaluation pressures that can favour guesses under uncertainty; this is not a complete account of every error. Context and retrieval can supply evidence but do not guarantee that the model uses it faithfully. Asking the model to acknowledge uncertainty is useful, but its self-reported confidence is not verification. For the later agent lab, require observations from tools and an independent completion check. A program executing successfully is weaker than a program producing a correct result; test against known cases, units, and calculations.}
+\end{frame}
+
+\begin{frame}{LLM Timeline: Foundations (2000--2024)}
   \centering
   \colorlet{colDec}{AMU_acc1!30}
   \colorlet{colEnc}{AMU_acc5!85}
@@ -943,51 +1732,132 @@ The neural network learns the weights of the connections to optimize its predict
   \end{tikzpicture}
 \end{frame}
 
-\begin{frame}{Further Reading on Transformers}
-  \begin{itemize}
-    \item Highly recommended: \href{https://jalammar.github.io/illustrated-transformer/}{The Illustrated Transformer (Jay Alammar)} for step-by-step visuals.
-    \item Optional deeper dive: \href{https://www.deeplearning.ai/short-courses/attention-in-transformers-concepts-and-code-in-pytorch/}{Attention in Transformers (Josh Starmer)} for basic understanding of attention.
-    \item Explore attention live: \href{https://poloclub.github.io/transformer-explainer/}{poloclub.github.io/transformer-explainer}
-
-  \end{itemize}
+\begin{frame}{LLM Timeline: 2024 to 2 October 2026}
+  \small Selected releases and announcements; dates identify events, not a performance ranking.
+  \begin{center}
+  \begin{tikzpicture}[
+    >=Stealth,
+    card/.style={draw=AMU_dk2, rounded corners=4pt, align=left,
+      text width=3.65cm, inner sep=7pt, anchor=north,
+      font=\fontsize{9}{11}\selectfont}]
+    \draw[->, thick, AMU_acc1] (-0.3,0) -- (9.6,0);
+    \foreach \x/\year in {0/2024,4.5/2025,9/2026} {
+      \draw[AMU_acc1, thick] (\x,0.12) -- (\x,-0.12);
+      \node[above, font=\bfseries] at (\x,0.15) {\year};
+    }
+    \node[card, fill=AMU_acc5!20] at (0,-0.5) {
+      \textbf{May}: \href{https://developers.openai.com/api/docs/changelog}{GPT-4o}\\[0.5em]
+      \textbf{June}: \href{https://www.anthropic.com/news/claude-3-5-sonnet}{Claude 3.5 Sonnet}\\[0.5em]
+      \textbf{July}: \href{https://ai.meta.com/blog/meta-llama-3-1/}{Llama 3.1}\\[0.5em]
+      \textbf{September}: \href{https://developers.openai.com/api/docs/changelog}{o1-preview}
+    };
+    \node[card, fill=AMU_lt2!35] at (4.5,-0.5) {
+      \textbf{January}: \href{https://api-docs.deepseek.com/updates/}{DeepSeek-R1}\\[0.5em]
+      \textbf{April}: \href{https://ai.meta.com/blog/llama-4-multimodal-intelligence/}{Llama 4}; \href{https://github.com/QwenLM/Qwen3}{Qwen3}\\[0.5em]
+      \textbf{August}: \href{https://developers.openai.com/api/docs/changelog}{GPT-5}\\[0.5em]
+      \textbf{November}: \href{https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-developers/}{Gemini 3 Pro (preview)}
+    };
+    \node[card, fill=AMU_dk2!10, font=\fontsize{9}{10}\selectfont] at (9,-0.5) {
+      \textbf{1 Sep}: \href{https://www.anthropic.com/claude-fable-and-mythos-5-1}{Fable 5.1 / Mythos 5.1}\\
+      \textbf{3 Sep}: \href{https://developers.openai.com/api/docs/changelog}{GPT-6 Astra}\\
+      \textbf{10 Sep}: \href{https://api-docs.deepseek.com/updates/}{DeepSeek V4.1 Flash}\\
+      \textbf{22 Sep}: \href{https://www.anthropic.com/claude-opus-5-5}{Opus 5.5}\\
+      \textbf{28 Sep}: \href{https://www.anthropic.com/claude-sonnet-5-5}{Sonnet 5.5}\\
+      \textbf{29 Sep}: \href{https://developers.openai.com/api/docs/changelog}{GPT-6.1 Sol}\\
+      \textbf{30 Sep}: \href{https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-argon/}{Gemini 4 Argon}$^*$
+    };
+  \end{tikzpicture}
+  \end{center}
+  {\footnotesize $^*$Argon: announced with restricted rollout to trusted cyber defenders; broader access planned.}
+  \par\vspace{0.3em}
+  {\scriptsize Official release sources linked in each entry; checked 2 October 2026.}
+  \note{Continue the original architectural timeline with representative releases, not an exhaustive catalogue. Month labels in 2024--2025 refer to the named release or preview; the 2026 column samples September releases and announcements, including generally available Fable 5.1 and restricted-access Mythos 5.1. The following slide explains access changes. Gemini 4 Argon is an announcement with restricted access, not a generally available classroom API. Other notable 2026 releases include GPT-5.4 on 5 March, GPT-5.5 on 24 April, GPT-5.6 on 9 July, GPT-6 Sol/Luna on 22 September. Dates and availability distinctions are recorded in docs/references.md.}
 \end{frame}
 
+\begin{frame}{Model Availability: Access Depends on the Use}
+  \small A model can be released while some capabilities remain restricted.
+  \par\vspace{0.4em}
+  {\footnotesize\renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{1.8cm}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{6.6cm}@{}}
+    \toprule
+    \textbf{When} & \textbf{Example} & \textbf{Who could use it?} \\
+    \midrule
+    Jun--Jul & \href{https://www.anthropic.com/news/redeploying-fable-5}{Fable 5 / Mythos 5} & June controls excluded foreign nationals; both suspended. Fable restored globally on 1 July. \\
+    1 Sep & \href{https://www.anthropic.com/claude-fable-and-mythos-5-1}{Fable 5.1 / Mythos 5.1} & Fable generally available; Mythos vetted access. Same model, different safeguards. \\
+    1 Oct deadline & \href{https://help.openai.com/en/articles/20001258-openai-daybreak-trusted-access-for-cyber-overview}{OpenAI Daybreak: individuals} & Identity checks, eligible paid plan, physical security key. Approval required. \\
+    Current access & \href{https://learn.chatgpt.com/docs/cyber-safety}{Daybreak: specialist cyber models} & Separate Red approval for business/enterprise organizations; Blue does not grant access. \\
+    \bottomrule
+  \end{tabular}\par}
+  \vspace{0.4em}
+  \small \textbf{For a scientific workflow}: check the model, permitted task, account eligibility, and continuity of access.
+  \par\vspace{0.3em}
+  {\scriptsize 1 October: deadline, not original announcement. Sources checked 2 October 2026.}
+  \note{This is a set of examples of differentiated access, not a claim that all frontier models require US citizenship or enterprise registration. The June restriction affected Fable 5 and Mythos 5 and was lifted on 30 June, with redeployment on 1 July. The September Fable/Mythos distinction concerns safeguards and vetted access, not two separate underlying models. September's initial Mythos announcement described availability to a set of US organizations; the 17 September Life Sciences Verification Program introduced Standard Use grants for verified teams and institutions, with additional vetting for high-risk work. General Fable access must not be confused with those grants. OpenAI's August 10 announcement said individual hardware requirements would begin September 1; current policy sets October 1 as the deadline for existing individual users. Physical key means an account-authentication device, not compute hardware. Authentication and specialist-model approval are separate checks; full criteria are in docs/references.md. Distinguish capabilities measured in a benchmark from capabilities a student or lab can actually access.}
+\end{frame}
 
-\begin{frame}{Inference and Decoding Strategies}
-  \begin{itemize}
-    \item Generation proceeds token by token; decoding choices shape behavior.
-    \item \textbf{Temperature}: scales logits to control randomness.
-    \item \textbf{Top-$k$} and \textbf{top-$p$ (nucleus)} sampling: restrict candidate tokens to most probable set.
-    \item \textbf{Max tokens}: upper bound on generated length; context window includes prompt + output.
-    \item Engineering considerations: caching key/value tensors, speculative decoding, batching requests.
-  \end{itemize}
+\begin{frame}{Further Reading: Understand the Transformer}
+  \small Choose the resource that helps you explain the worked example in your own words.
+  \par\vspace{0.25em}
+  {\footnotesize\renewcommand{\arraystretch}{1.05}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{5.0cm}>{\raggedright\arraybackslash}p{4.8cm}@{}}
+    \toprule
+    \textbf{Format} & \textbf{Resource} & \textbf{What to do} \\
+    \midrule
+    Interactive & \href{https://poloclub.github.io/transformer-explainer/}{Transformer Explainer} & Change the prompt; trace attention, token scores, and generation. \\
+    Visual videos & \href{https://www.deeplearning.ai/courses/how-transformer-llms-work}{DeepLearning.AI: Alammar / Grootendorst} & Self-Attention (10 min); The Transformer Block (6 min). \\
+    Worked videos & \href{https://www.deeplearning.ai/courses/attention-in-transformers-concepts-and-code-in-pytorch}{DeepLearning.AI: Josh Starmer} & Main Ideas (4 min); Matrix Math for Self-Attention (11 min). \\
+    Illustrated text & \href{https://jalammar.github.io/illustrated-transformer/}{Jay Alammar: The Illustrated Transformer} (2018) & Follow one block from input vectors to its output. \\
+    University course & \href{https://cs336.stanford.edu/}{Stanford CS336, Spring 2026} & Lecture 1: tokenization; lecture 3: architectures. Notes and code. \\
+    \bottomrule
+  \end{tabular}\par}
+  \vspace{0.25em}
+  \small \textbf{Animation + transcript}: \href{https://www.3blue1brown.com/lessons/attention/}{3Blue1Brown: Attention, step-by-step} (2024).
+  \par\vspace{0.2em}
+  \textbf{Original paper}: \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need} (2017), Figure 1 and Sections 3.1--3.2.
+  \par\vspace{0.3em}
+  {\scriptsize Links checked 2 October 2026.}
 \end{frame}
 
 \section{Capabilities and Limitations}
 
 \begin{frame}{What LLMs Do Well}
-  \begin{itemize}
-    \item Few-shot learning: adapt to new tasks using examples in the prompt.
-    \item Chain-of-thought prompting: articulate intermediate reasoning steps.
-    \item Code generation and refactoring for Python, SQL, and beyond.
-    \item Summarization, translation, explanation across domains.
-    \item Data-wrangling assistance: regex creation, feature brainstorming, doc parsing.
-  \end{itemize}
+  \small An LLM can turn a task description and supplied information into text, code, or a proposed action.
+  \par\vspace{0.35em}
+  {\footnotesize\renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{9.1cm}@{}}
+    \toprule
+    \textbf{Model task} & \textbf{Data-science example} \\
+    \midrule
+    Extract and organize & Turn supplied reports into a table; label customer comments using examples. \\
+    Write and revise code & Produce Python or SQL; revise it after seeing test failures or execution errors. \\
+    Plan an analysis & Propose comparisons, features, and experiments from a question and a data description. \\
+    Explain results & Describe supplied tables and plots; write a report for a particular audience. \\
+    \bottomrule
+  \end{tabular}\par}
+  \vspace{0.4em}
+  \small \textbf{Tools make the actions real}: fetch data, run the code, fit models, render a dashboard, or update a system. An agent connects these actions in a loop.
+  \par\vspace{0.35em}
+  \textbf{Measure the complete task}: correctness, time, and cost against an existing method.
+  \note{These are task categories, not a guarantee that every model succeeds on every dataset. A model produces code or a tool request; an execution environment performs it and returns evidence. Capabilities depend on the model, supplied context, tools, and task. Current examples of complete application building and its limitations: \href{https://www.anthropic.com/engineering/harness-design-long-running-apps}{Harness design for long-running application development} (24 March 2026). Model, session history, and execution are distinct components: \href{https://www.anthropic.com/engineering/managed-agents}{Scaling Managed Agents} (8 April 2026). Use a task-specific evaluation rather than a model's self-assessment: \href{https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents}{Demystifying evals for AI agents} (9 January 2026).}
 \end{frame}
 
 \begin{frame}{Limits, Risks, Practices}
-  \begin{itemize}
-    \item \textbf{Hallucinations}: confident but fabricated answers without grounding.
-    \item \textbf{Inconsistency}: outputs vary with phrasing, temperature, and randomness.
-    %\item \textbf{Lack of true reasoning}: pattern matching, not deep understanding
-    \item \textbf{Context window limits}: available input and output tokens depend on the chosen model.
-    \item \textbf{Bias and toxicity}: inherited from training data, requiring audits and guardrails.
-    \item \textbf{Cost and latency}: API tokens and GPU serving are not free; optimize prompts and batching.
-    \item \textbf{No persistent memory}: model forgets state across sessions unless you build storage.
-    \item \textbf{Data privacy}: be cautious with sensitive info; follow provider policies.
-    \item \textbf{Best practices}: clear prompts, few-shot examples, temperature tuning, output validation.
-    \item \textbf{Human-in-the-loop}: always review critical outputs; LLMs assist, not replace, human judgment.
-  \end{itemize}
+  \small Alongside context and factual checks, check the data, tool permissions, and execution limits.
+  \par\vspace{0.35em}
+  {\footnotesize\renewcommand{\arraystretch}{1.05}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{8.0cm}@{}}
+    \toprule
+    \textbf{What can fail} & \textbf{What to check or constrain} \\
+    \midrule
+    Code runs, but the analysis is wrong & Hold out test data; compare a baseline; inspect errors by group. \\
+    A document gives unwanted instructions & Treat retrieved text as data; restrict tool permissions independently of the model. \\
+    Private data or unintended changes & Send only necessary data; isolate code execution; require approval for consequential actions. \\
+    Slow or costly loops & Log the actions; define when to stop; cap steps, runtime, and spending. \\
+    \bottomrule
+  \end{tabular}\par}
+  \vspace{0.35em}
+  \small \textbf{Your responsibility}: define success and support the conclusion with evidence.
+  \note{A document containing instructions intended to redirect an agent is a prompt injection. Access controls must be enforced by the surrounding system: a sentence in the prompt is not a permission boundary. See \href{https://www.anthropic.com/news/prompt-injection-defenses}{Mitigating the risk of prompt injections in browser use} (24 November 2025). Context is limited, but applications can store state and reload it; the practical issue is whether the right information reaches each model call. Evaluation must inspect the result as well as the sequence of actions, and can combine executable checks with calibrated human review: \href{https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents}{Demystifying evals for AI agents} (9 January 2026). A high test score is not enough if test information was used during training, important groups fail, or the analysis does not answer the research question.}
 \end{frame}
 
 \section{Ecosystem and Access}
@@ -1069,22 +1939,55 @@ print(resp.choices[0].message.content)
 
 \section{Wrap-Up}
 
-\begin{frame}{Further Reading}
-  \vspace{-0.4em}
-  \begin{tabular}{@{}p{3.8cm}p{7.8cm}@{}}
+\begin{frame}{Further Reading: From Models to Agent Loops}
+  \small Follow a complete task, then inspect how the workflow checks its result.
+  \par\vspace{0.4em}
+  {\footnotesize\renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{5.0cm}>{\raggedright\arraybackslash}p{4.8cm}@{}}
     \toprule
-    \textbf{Concept} & \textbf{Reference / Why it matters} \\
+    \textbf{Next step} & \textbf{Resource} & \textbf{What to look for} \\
     \midrule
-    LLM overview & \href{https://learn.deeplearning.ai/courses/how-transformer-llms-work}{How Transformer LLMs Work (deeplearning.ai)} — concise intro to components. \\
-    Transformer basics & \href{https://jalammar.github.io/illustrated-transformer/}{The Illustrated Transformer (Jay Alammar)} — visual intuition for attention. \\
-    %Tokenization & \href{https://github.com/openai/tiktoken}{OpenAI \texttt{tiktoken}}; \href{https://huggingface.co/docs/tokenizers/index}{HF Tokenizers} — counts, costs, subwords. \\
-    Attention math & \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need (Vaswani et al., 2017)} — original paper. \\
-    %Scaling laws & \href{https://arxiv.org/abs/2005.14165}{GPT-3 (Brown et al., 2020)}; \href{https://arxiv.org/abs/2203.15556}{Chinchilla (Hoffmann et al., 2022)} — compute/data trade-offs. \\
-    APIs (OpenAI) & \href{https://platform.openai.com/docs}{OpenAI Platform Docs} — endpoints, auth, safety. \\
-    APIs (Gemini) & \href{https://ai.google.dev/gemini-api/docs}{Gemini API Docs} — SDK, model availability, quotas. \\
-    APIs (Claude) & \href{https://docs.anthropic.com}{Anthropic Claude Docs} — reasoning, tool use. \\
-    APIs (Grok) & \href{https://x.ai/api}{xAI Grok API} — OpenAI-compatible endpoints. \\
-     \bottomrule
-  \end{tabular}
+    Follow a loop & \href{https://huggingface.co/learn/agents-course/en/unit1/agent-steps-and-structure}{Hugging Face Agents Course: Unit 1} & Identify the task, action, observation, and stopping condition. \\
+    Watch workflows & \href{https://www.deeplearning.ai/courses/agentic-ai}{Andrew Ng: Agentic AI} & Task decomposition, tool use, reflection, and evaluation. \\
+    Recent course & \href{https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google}{Google/Kaggle Agents Intensive, June 2026} & Tools, state, and evaluation for Weeks 5--6. \\
+    Check results & \href{https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents}{Anthropic: Demystifying evals for AI agents} (Jan 2026) & Define success and inspect the trace of actions and failures. \\
+    \bottomrule
+  \end{tabular}\par}
+  \vspace{0.6em}
+  \small \textbf{Implementation references}: \href{https://huggingface.co/docs/transformers/en/index}{Hugging Face Transformers};
+  \href{https://developers.openai.com/api/docs/}{OpenAI};
+  \href{https://ai.google.dev/gemini-api/docs}{Gemini};
+  \href{https://platform.claude.com/docs/en/home}{Claude}.
+  \par\vspace{0.4em}
+  {\scriptsize Full reading and video list: \texttt{docs/references.md}. Links checked 2 October 2026.}
+\end{frame}
+\begin{frame}{Course Repository: Use It and Improve It}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.57\textwidth}
+      \textbf{All course materials in one place}
+      \par\vspace{0.3em}
+      \small Slides, labs, datasets, and the attention animation.
+      \par\vspace{0.5em}
+      \href{https://github.com/NaitsabesMue/llms-data-science-course}{\texttt{github.com/NaitsabesMue/}}\\
+      \href{https://github.com/NaitsabesMue/llms-data-science-course}{\texttt{llms-data-science-course}}
+      \par\vspace{1em}
+      \textbf{Contribute to the course}
+      \begin{itemize}
+        \item Report errors or unclear explanations.
+        \item Suggest examples, datasets, or exercises.
+        \item Improve a slide or lab with a pull request.
+      \end{itemize}
+      \href{https://github.com/NaitsabesMue/llms-data-science-course/issues}{Open an issue}
+      or \href{https://github.com/NaitsabesMue/llms-data-science-course/pulls}{propose a change}.
+    \end{column}
+    \begin{column}{0.39\textwidth}
+      \centering
+      {\color{black}\qrcode[height=3.5cm,level=M,padding]{https://github.com/NaitsabesMue/llms-data-science-course}}
+      \par\vspace{0.4em}
+      \small \textbf{Scan to open the repository}
+    \end{column}
+  \end{columns}
+  \vspace{0.8em}
+  \footnotesize For an issue, include the slide or notebook cell and what needs to change.
 \end{frame}
 \end{document}

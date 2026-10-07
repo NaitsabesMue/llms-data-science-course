@@ -31,6 +31,16 @@ The original illustrated introduction remains the foundation. RAG remains in the
 
 See the [lecture outline](LLM_for_Science_outline.md), [recent lecture videos and readings](docs/references.md), and [revision notes](docs/2026_revision.md).
 
+Week 1 includes an [animated self-attention walkthrough](visualizations/attention/index.html). Open `visualizations/attention/index.html` in a browser; it runs offline. Follow **red toy robot** from token vectors through query/key comparisons, matrix multiplication, value mixing, residual addition, and the next block. Use Play or step through manually; enable **Show matrix calculations** to trace individual products. No installation or API key is needed. The lecture then connects the mechanisms to practice: supply relevant context, keep tool observations current, record generation settings, and verify claims and calculations.
+
+The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer, chat-format token counts, and a comparison of lookup and contextual vectors. An optional NumPy attention exercise matches the animation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
+
+## Rules of the game
+
+- **Lecture: screens off.** Listen, ask questions, discuss, and sketch ideas on paper.
+- **Lab: collaborate and use tools.** Work together with laptops, AI assistants, and coding tools. Test the results and be able to explain your work.
+- **Final evaluation: one hackathon day.** Build a working product around an agent loop: the model calls tools, receives observations, and revises the work. Demonstrate what you learned by showing the product and the loop running.
+
 ## Lab setup
 
 ```sh
@@ -53,16 +63,18 @@ The Week 5 extension uses the smaller standard-library image. Both containers ha
 
 ## Final evaluation: hackathon
 
-Teams of 1–5 students present a small project using LLMs in data science. Keep the original grading scheme (4 × 5 points):
+Teams of 1–5 students spend one day building a working product that uses an agent loop to complete a concrete task. A small application, dashboard, or service is enough if a user can run it and obtain a useful result. A local demo is sufficient; public deployment is optional.
+
+Show the product working, a trace of tool calls and observations, a failure followed by a revision, and the check that decides when the task is complete. Explain which course concepts you used and why. The grading scheme remains four criteria worth 5 points each:
 
 | Criterion | Points | Evidence |
 |---|---:|---|
 | Use Case & Applications | 5 | Relevant problem, useful result, comparison with a baseline |
 | Code Cleanliness | 5 | Readability, organization, modularity, reproducibility |
-| Lecture Integration | 5 | Appropriate use of prompting, embeddings, classification, retrieval, or agent loops; checked results |
+| Lecture Integration | 5 | A working agent loop with tool use, feedback, a stopping condition, and checked results; explain other course methods used |
 | Presentation | 5 | Clear demo, visuals, and explanation of decisions and limitations |
 
-Report quality, total time including review and repair, and API usage/cost. A more complex agent is useful only if the comparison supports it. Presentations remain 5–7 minutes; the score out of 20 is the course grade.
+Compare with a simple baseline on the same tasks. Report quality, total time including review and repair, and API usage/cost. Keep the loop as simple as the task allows. Presentations remain 5–7 minutes; the score out of 20 is the course grade.
 
 ## Shared and private materials
 
