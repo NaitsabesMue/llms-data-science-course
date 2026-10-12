@@ -1,0 +1,101 @@
+% Optional historical RNN translation figures, preserved from Week 1.
+% Not included in the main lecture PDF.
+% To use as backup slides, add \appendix and
+% \input{supplementary/rnn_translation.tex} before \end{document}
+% in week_1_intro.tex. The figures use its existing preamble.
+
+\begin{frame}{RNN Translation: Encoder and Decoder}
+  \small The \textbf{encoder} reads the input into a hidden state. The \textbf{decoder} uses that state to generate the translation.\par\vspace{0.3em}
+  \centering
+  \resizebox{!}{0.66\textheight}{\begin{tikzpicture}[
+    box/.style={rectangle, draw, rounded corners=2pt, minimum height=0.8cm, minimum width=1.5cm, align=center, font=\small},
+    inputbox/.style={box, fill=blue!10},
+    outputbox/.style={box, fill=green!10},
+    encoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=cyan!20},
+    decoderbox/.style={rectangle, draw, minimum height=1.2cm, minimum width=8cm, align=center, font=\small, fill=pink!20},
+    label/.style={font=\small, align=left, text width=2cm}
+  ]
+
+    % Input sequence
+    \node[inputbox] (i1) at (1,3.5) {I};
+    \node[inputbox] (i2) at (3,3.5) {love};
+    \node[inputbox] (i3) at (5,3.5) {robots};
+
+
+
+    % Encoder
+    \node[encoderbox, fill=AMU_acc5!80] (enc) at (3,1.5) {
+      \textbf{Encoder (RNN)}\\
+      \small Read the English input
+    };
+
+    % Decoder
+    \node[decoderbox,  fill=AMU_acc6!60] (dec) at (3,-0.5) {
+      \textbf{Decoder (RNN)}\\
+      \small Use the state to generate German
+    };
+
+
+    % Arrows from encoder to decoder
+    \draw[dotted] (enc.south west) -- (dec.north west);
+    \draw[dotted] (enc.south east) -- (dec.north east);
+    \draw[->] (enc.south) -- (dec.north) node[midway, right, font=\footnotesize] {Final encoder hidden state};
+
+    % Output sequence
+    \node[outputbox] (o1) at (1,-2.5) {Ich};
+    \node[outputbox] (o2) at (3,-2.5) {liebe};
+    \node[outputbox] (o3) at (5,-2.5) {Roboter};
+
+ % Arrows from input to encoder
+    \draw[->] (i1) -- (enc);
+    \draw[->] (i2) -- (enc);
+    \draw[->] (i3) -- (enc);
+
+    % Arrows from decoder to output
+    \draw[->] (dec) -- (o1);
+    \draw[->] (dec) -- (o2);
+    \draw[->] (dec) -- (o3);
+
+    % Labels
+    \node[label, left=0.5cm of i1.west] {Input\\sequence};
+    \node[label, left=0.5cm of o1.west] {Output\\sequence};
+
+    % Neural Machine Translation label
+    \node[rotate=90, label, anchor=south] at (-1.5,1) {Neural\\machine\\translation};
+
+    % Dotted border around encoder-decoder
+    \draw[dotted] ([xshift=-0.5cm,yshift=0.5cm]enc.north west) rectangle ([xshift=0.5cm,yshift=-0.5cm]dec.south east);
+
+  \end{tikzpicture}}
+\end{frame}
+
+\begin{frame}{RNN Translation: Carry the Context Forward}
+  \small The English input initializes the decoder's state. Each generated token is then fed into the next step.
+  \begin{center}
+  \begin{tikzpicture}[font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, minimum height=0.85cm},
+    state/.style={box, text width=2.5cm, fill=AMU_acc5!25},
+    rnnstep/.style={box, text width=2.8cm, fill=AMU_dk2!12},
+    token/.style={box, minimum width=1.9cm, fill=AMU_acc6!20},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[state] (encoded) at (0,0) {\textbf{Input context}\\encoder state\\{\footnotesize ``I love robots''}};
+    \node[rnnstep] (d1) at (4.5,0) {Decoder step 1};
+    \node[rnnstep] (d2) at (4.5,-1.6) {Decoder step 2};
+    \node[rnnstep] (d3) at (4.5,-3.2) {Decoder step 3};
+    \node[token] (o1) at (9,0) {Ich};
+    \node[token] (o2) at (9,-1.6) {liebe};
+    \node[token] (o3) at (9,-3.2) {Roboter};
+    \node[above=0.25cm of o1, font=\footnotesize] {Chosen output tokens};
+    \draw[arrow] (encoded) -- node[above, font=\footnotesize] {initialize} (d1);
+    \draw[arrow] (d1) -- (o1);
+    \draw[arrow] (d2) -- (o2);
+    \draw[arrow] (d3) -- (o3);
+    \draw[arrow] (d1) -- node[left, font=\footnotesize] {carry state} (d2);
+    \draw[arrow] (d2) -- node[left, font=\footnotesize] {carry state} (d3);
+    \draw[arrow] (o1.south) -- (9,-0.8) -- node[above, font=\footnotesize] {feed back \texttt{Ich}} (6.3,-0.8) -- (d2.north east);
+    \draw[arrow] (o2.south) -- (9,-2.4) -- node[above, font=\footnotesize] {feed back \texttt{liebe}} (6.3,-2.4) -- (d3.north east);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{The input context is carried in the state; generated tokens advance the output.}
+  \note{This is the simple RNN encoder-decoder without attention. The final encoder hidden state initializes the decoder; later decoder states carry that input information forward. A start token, omitted here, supplies the first decoder token input. Later steps receive both the previous decoder state and the previously chosen output token. The output layer and choice rule are abbreviated by the arrows to German tokens. English source words are not concatenated to the generated German prefix or re-fed as direct token inputs at every decoder step. This replaces the misleading repeated source-word rows while retaining the original English/German example and step-by-step generation. During training, the decoder can receive reference previous tokens instead of its own predictions. Later, Transformer cross-attention offers a direct route back to all encoder token vectors, rather than relying only on this state being carried forward.}
+\end{frame}

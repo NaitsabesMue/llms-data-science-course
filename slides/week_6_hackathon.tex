@@ -37,7 +37,7 @@
       \textbf{Full-day Hackathon}
       \begin{itemize}
         \item Choose a problem and dataset
-        \item Design an end-to-end LLM / RAG pipeline
+        \item Build an agent loop that delivers a working product
         \item Implement, test, and iterate
         \item Prepare a short live demo and summary
       \end{itemize}
@@ -50,7 +50,7 @@
 \begin{frame}{Why a Hackathon?}
   \begin{itemize}
     \item Move from \textbf{toy examples} to an \textbf{end-to-end project} in a realistic setting.
-    \item Combine techniques from the whole course: tokenization, embeddings, HF models, prompting, classification, RAG.
+    \item Apply course concepts to a working product: model calls, tools, feedback, and checks; add retrieval or classification where useful.
     \item Practice \textbf{teamwork} around LLMs and data: dividing roles, coordinating experiments, merging ideas.
     \item Experience trade-offs between ambition and scope under strict time constraints.
   \end{itemize}
@@ -63,7 +63,7 @@
       \begin{itemize}
         \item \textbf{Use Case \& Applications (5 pts)}: relevance, originality, potential future usefulness.
         \item \textbf{Code Cleanliness (5 pts)}: readability, organization, modularity, reproducibility.
-        \item \textbf{Lecture Integration (5 pts)}: use of course concepts (prompting, RAG, embeddings, classification, agent loops, etc.).
+        \item \textbf{Lecture Integration (5 pts)}: a working agent loop with tools, feedback, a stopping condition, and checked results; explain other course methods used.
         \item \textbf{Presentation (5 pts)}: clarity, conciseness, visuals, explanation of design choices.
       \end{itemize}
     \item Your hackathon score is your \textbf{official course grade}.
@@ -75,9 +75,9 @@
     \item Work in groups of \textbf{1 to 5} students (recommended: 3--4).
     \item Each team produces:
       \begin{itemize}
-        \item a small but coherent \textbf{project repository or notebook(s)},
+        \item a \textbf{working product} and its code or notebook(s),
         \item a baseline comparison (quality, time, and API cost),
-        \item a short \textbf{live demo} of the system (or a recorded run, if needed),
+        \item a \textbf{demo and loop trace}, including a failure, revision, and completion check,
         \item a \textbf{5--7 minute presentation} covering problem, approach, and lessons learned.
       \end{itemize}
     \item Use any combination of tools seen in the course:
@@ -96,17 +96,17 @@
     \item \textbf{Grounded in data}: use real or realistic data relevant to AMU, Marseille, or data science practice.
     \item \textbf{Course concepts in action}:
       \begin{itemize}
-        \item thoughtful prompts, embeddings, RAG, or classification models,
-        \item not just a UI wrapped around an API.
+        \item an agent that uses tools, observes results, and revises its work,
+        \item checked results; use retrieval, embeddings, or classification where they help.
       \end{itemize}
-    \item \textbf{End-to-end story}: ingestion $\rightarrow$ processing / retrieval $\rightarrow$ model $\rightarrow$ output.
+    \item \textbf{End-to-end result}: a user can run the product and obtain a useful outcome.
     \item \textbf{Simple but solid}: small scope, but robust, well-structured, and easy to demo.
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Scope for One Day}
   \begin{itemize}
-    \item Aim for a \textbf{minimal viable assistant}, not a full product.
+    \item Aim for a \textbf{small working product} with one complete agent workflow.
     \item Prefer:
       \begin{itemize}
         \item one or two well-implemented workflows,
@@ -207,9 +207,9 @@
       \begin{itemize}
         \item datasets, external documents, HF models, LLM endpoints.
       \end{itemize}
-    \item \textbf{3. Design the pipeline}:
+    \item \textbf{3. Design the agent loop}:
       \begin{itemize}
-        \item retrieval / preprocessing, model calls, post-processing.
+        \item tools, observations, revisions, stopping rule, and completion check.
       \end{itemize}
     \item \textbf{4. Implement the minimal version}:
       \begin{itemize}
@@ -232,4 +232,3 @@
 \end{frame}
 
 \end{document}
-

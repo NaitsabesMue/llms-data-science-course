@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Self-attention — red toy robot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><p class="eyebrow">LLMs in Data Science · Week 1</p><h1>How context changes a token’s representation</h1></div>
+      <span class="lesson-tag">One example, step by step.</span>
+    </header>
+    <nav id="stages" aria-label="Lesson steps"></nav>
+    <section class="lesson" aria-labelledby="step-title">
+      <div class="intro">
+        <p class="eyebrow" id="step-number"></p>
+        <h2 id="step-title"></h2>
+        <p id="step-description"></p>
+      </div>
+      <div class="token-strip" aria-label="Input tokens remain fixed">
+        <span class="strip-label">Input text</span><span class="token red">red <small>position 1</small></span><span class="token toy">toy <small>position 2</small></span><span class="token robot">robot <small>position 3</small></span><span class="strip-note">These labels stay the same throughout.</span>
+      </div>
+      <div id="scene" aria-live="off"></div>
+      <div class="takeaway" id="takeaway"></div>
+    </section>
+    <section class="controls" aria-label="Playback controls">
+      <div class="transport"><button id="back" aria-label="Previous step">← Back</button><button id="play">▶ Play</button><button id="next">Next →</button><span id="counter"></span></div>
+      <div class="options"><label>Speed <select id="speed"><option value="0.6">Slow</option><option value="1" selected>Normal</option><option value="1.7">Fast</option></select></label><label><input id="show-math" type="checkbox"> Show matrix calculations</label></div>
+      <progress id="progress" max="100" value="0" aria-label="Time until next step"></progress>
+    </section>
+    <section id="math" hidden aria-labelledby="math-title">
+      <div class="math-heading"><div><p class="eyebrow">Optional · the same operations as matrices</p><h2 id="math-title"></h2></div><label>Calculation <select id="operation"></select></label></div>
+      <p id="math-description"></p>
+      <div id="matrices"></div>
+      <div class="calculation"><div id="products"></div><button id="product-next">Next product →</button></div>
+      <p class="math-note" id="math-note"></p>
+    </section>
+    <details class="scope"><summary>What this example simplifies</summary><p>Each word is treated as one token. All displayed matrices are invented for teaching, not extracted from a trained model. Their coordinates do not literally mean “red”, “toy”, or “robot”. We start with a deliberately simple input matrix, omit positional encoding and normalization, and use one attention head with identity value and output projections. Actual Transformer blocks also include normalization and a feed-forward network; those operations belong between this attention update and the next block. The next block has its own learned matrices.</p></details>
+    <footer>Original diagrams and code. Inspired by <a href="https://www.3blue1brown.com/lessons/attention/">3Blue1Brown’s attention lesson</a>. Mathematics: <a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a>. Further explanations: DeepLearning.AI’s <a href="https://www.deeplearning.ai/courses/how-transformer-llms-work">How Transformer LLMs Work</a> and <a href="https://www.deeplearning.ai/courses/attention-in-transformers-concepts-and-code-in-pytorch">Attention in Transformers</a>. Works offline after download. Arrow keys change steps; Space plays or pauses when focus is outside a control.</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

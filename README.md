@@ -28,7 +28,7 @@ The original illustrated introduction remains the foundation. RAG remains in the
 
 See the [lecture outline](LLM_for_Science_outline.md), [recent lecture videos and readings](docs/references.md), and [revision notes](docs/2026_revision.md).
 
-The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer, chat-format token counts, and a comparison of lookup and contextual vectors. An optional NumPy exercise follows the self-attention calculation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
+The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer and a comparison of lookup and contextual vectors. An optional NumPy exercise follows the self-attention calculation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
 
 ## Rules of the game
 

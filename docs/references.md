@@ -25,6 +25,8 @@ Course hubs were checked; individual YouTube playback was not verified in this e
 
 ## Week 1: attention teaching sequence and video choices
 
+The main lecture follows one route: **RNN context → attention → Transformer blocks → encoder and decoder roles → training → generation**. The RNN diagram uses `red toy robot` to show context passing through successive hidden states; attention then introduces direct connections between positions. Teach encoder, decoder and their combination together after attention, then explain how the weights are learned before using them for generation. The two historical RNN translation figures are preserved as [optional slides](../slides/supplementary/rnn_translation.tex), outside the main PDF. Their historical reference is [Sutskever et al., Sequence to Sequence Learning with Neural Networks (2014)](https://arxiv.org/abs/1409.3215).
+
 The lecture and [offline animation](../visualizations/attention/index.html) use **red toy robot** throughout. The animation can be played or stepped manually. Its optional matrix view highlights an input row, a matrix column, and the successive products forming the selected result. Open the HTML file in a browser; keep its CSS and JavaScript files alongside it. No server or network is required.
 
 The sequence follows [3Blue1Brown's attention lesson](https://www.3blue1brown.com/lessons/attention/): establish the contextual change we want before explaining how queries, keys, values and addition produce it. The diagrams and implementation are original; they do not reproduce video clips or screenshots.
@@ -32,11 +34,15 @@ The sequence follows [3Blue1Brown's attention lesson](https://www.3blue1brown.co
 1. **Purpose.** The representation at `robot` should incorporate context from `red` and `toy`: `toy` specifies a plaything, changing the kind of object. The word remains `robot`; we change its numerical representation. The geometric picture is schematic, not a measured embedding plot.
 2. **Three learned transformations.** The same incoming representations produce queries, keys and values. The trained matrices stay fixed during inference; the resulting vectors depend on the input. Optional opening: Starmer's **The Main Ideas Behind Transformers and Attention** (4 min), or Alammar/Grootendorst's **Self-Attention** (10 min).
 3. **One comparison, then all comparisons.** Follow `robot`'s query against the `toy` key, coordinate by coordinate. Then put all query/key comparisons into `Q Kᵀ`. The transpose turns key rows into columns. Starmer's **The Matrix Math for Calculating Self-Attention** (11 min) is a numerical companion.
-4. **Allowed context and weights.** A causal decoder excludes future positions before row-wise softmax. Each position gets its own weights. `robot` can use all three tokens; `toy` cannot use later `robot`. Starmer's **Self-Attention vs Masked Self-Attention** (14 min) is an optional follow-up.
-5. **Information to pass.** The attention weights combine value vectors. `A V` calculates every position's attention contribution. A mixing coefficient is not a percentage of retained meaning or a next-token probability.
-6. **Add context.** The original representation has a direct residual path and is added to the attention contribution. [The original paper, Section 3.1](https://arxiv.org/html/1706.03762v7) distinguishes attention computation, residual addition and normalisation. The lecture labels omitted operations explicitly.
-7. **Complete the block, then compare again.** Feed-forward processing acts separately at each position and also has a residual addition. The next block receives the richer representations and calculates new queries, keys and values with its own learned matrices. Alammar/Grootendorst's **The Transformer Block** (6 min) and [Alammar's residual diagrams](https://jalammar.github.io/illustrated-transformer/#the-residuals) are companions. An updated query is never matched against the old keys halfway through the current attention calculation.
-8. **Generate.** After the final decoder block, the output layer gives next-token probabilities. Choose and append a token, then repeat. These generation steps are different from the stacked blocks within a single model pass. Starmer's **Encoder-Decoder Attention** (4 min) accompanies the translation extension.
+4. **Allowed context and weights.** For next-token prediction, a causal mask excludes future positions before row-wise softmax. Each position gets its own weights. `robot` can use all three tokens; `toy` cannot use later `robot`. Name the decoder architecture after explaining attention and blocks. Starmer's **Self-Attention vs Masked Self-Attention** (14 min) is an optional follow-up.
+5. **Combine values and add context.** The attention weights combine value vectors. Finish the same worked example by adding that contribution to the original vector at `robot`. This prevents interpreting the attention weight as the fraction of the original meaning retained. [The original paper, Section 3.1](https://arxiv.org/html/1706.03762v7) distinguishes the attention contribution, residual addition and remaining block operations.
+6. **From attention to a Transformer.** One overview shows token vectors passing through successive blocks. Each block combines context through self-attention and processes each vector with a feed-forward network. The token positions remain the same; choosing a new token follows the final block when generating text. Detailed residual paths and the next block's query/key/value calculations are optional.
+7. **Read or continue.** Define an encoder and a decoder as stacks of Transformer blocks on consecutive slides. Show the same receiving position, `toy`: an encoder can use `red`, `toy`, and `robot`; decoder self-attention blocks the later `robot` when predicting it from `red toy`. The message is complete-input context versus the text available so far. [Hugging Face's architecture introduction](https://huggingface.co/learn/llm-course/chapter1/6) distinguishes the model families.
+8. **Connect the two roles.** Immediately show encoder-decoder translation: the English input becomes reusable encoder vectors. The French output so far reaches decoder self-attention; English vectors reach cross-attention inside the decoder. The input stays available while the output grows. Two stacks of blocks form this model; a block is not an encoder-decoder pair. Starmer's **Encoder-Decoder Attention** (4 min) is an optional companion. The original paper's Section 3.2.3 explains these two routes.
+9. **Train the model.** Return to GPT-style models with `red toy robot moves forward` as training text. The prefix `red toy robot` is the input; the observed next token `moves` supplies the target. Define loss as the penalty for giving that target low probability, then show feedback updating the model's weights. Repeat across positions and texts for pretraining. Mention later instruction training briefly; leave gradient and optimizer details in the slide notes. The [causal language modeling guide](https://huggingface.co/docs/transformers/tasks/language_modeling) explains targets from text and training before inference; the [LLM Course introduction](https://huggingface.co/learn/llm-course/chapter1/4) distinguishes pretraining and subsequent training.
+10. **Generate.** Keep the learned weights fixed: the supplied prompt and appended continuation form one sequence. After the final decoder block, the last position's vector produces next-token probabilities. Choose and append a token, then repeat. These generation steps are different from training updates and from blocks within one pass. Continue straight into token choice and generation settings.
+
+The original value-matrix calculation, residual diagram, full block diagram and next-block query/key/value explanation are preserved as [optional technical slides](../slides/supplementary/transformer_details.tex). Companions for this extra detail are Alammar/Grootendorst's **The Transformer Block** (6 min) and [Alammar's residual diagrams](https://jalammar.github.io/illustrated-transformer/#the-residuals). The main lecture retains the context update and the definition of a block needed by the following architecture slides.
 
 DeepLearning.AI lesson titles and approximate durations were checked against the official course catalogues: [Starmer](https://www.deeplearning.ai/courses/attention-in-transformers-concepts-and-code-in-pytorch), [Alammar/Grootendorst](https://www.deeplearning.ai/courses/how-transformer-llms-work). Course playback may require signing in; lesson playback and timestamps were not verified here.
 
@@ -112,6 +118,19 @@ The 1 October date is a compliance deadline in the current policy, not the date 
 
 For the course, treat continuity of access as part of workflow design: keep model choice configurable and evaluation reproducible. This is our practical conclusion from the examples, not a provider policy.
 
+## Developer interfaces: API, browser, and terminal
+
+Checked 7 October 2026. Week 1 shows selected developer interfaces rather than treating an API as the only way to use a hosted model. A browser console is a playground for experimenting; a terminal agent adds file access, tools and execution feedback around model calls.
+
+| Provider | Browser interface | Terminal example | Official references |
+|---|---|---|---|
+| OpenAI | Platform Playground | Codex CLI | [Playground documentation](https://developers.openai.com/api/docs/guides/prompt-generation), [Codex CLI](https://learn.chatgpt.com/docs/codex/cli) |
+| Google | AI Studio | Gemini CLI | [AI Studio quickstart](https://ai.google.dev/gemini-api/docs/ai-studio-quickstart), [Google's Gemini CLI repository](https://github.com/google-gemini/gemini-cli) |
+| Anthropic | Claude Console | Claude Code | [Developer tools](https://platform.claude.com/docs/en/intro), [Claude Code overview](https://code.claude.com/docs/en/overview) |
+| xAI | Console playground | API calls from scripts | [API documentation](https://docs.x.ai/overview) shows the playground and curl/Python calls. |
+
+All four provide hosted APIs. Codex CLI, Gemini CLI and Claude Code are agent applications, distinct from the model families. The xAI row lists direct calls from a script; it does not assert that an official terminal agent is unavailable. Product plans, API billing and model access must be checked for the chosen interface.
+
 ## Class readings
 
 | Reading | Date | Purpose |
@@ -158,3 +177,14 @@ Week 1's workflow examples use these implementation sources:
 - [Claude code execution](https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool): provider-managed execution with files and results.
 - [E2B code interpreter](https://github.com/e2b-dev/code-interpreter): a separate execution service usable with different model providers.
 - [Docker run reference](https://docs.docker.com/engine/containers/run/): execution limits used in the local lab.
+
+## Week 2: pretrained models and measured inference
+
+Sources checked 11 October 2026. The [Week 2 review](week_2_review.md) explains the teaching changes and remaining validation.
+
+- [Transformers v5 migration guide](https://github.com/huggingface/transformers/blob/main/MIGRATION_GUIDE_V5.md): removed summarization pipeline and current library changes.
+- [Pipeline tutorial](https://huggingface.co/docs/transformers/en/pipeline_tutorial) and [Behind the pipeline](https://huggingface.co/learn/llm-course/chapter2/2): input processing, inference and output interpretation.
+- [Hub downloads](https://huggingface.co/docs/huggingface_hub/en/guides/download), [cache settings](https://huggingface.co/docs/huggingface_hub/en/package_reference/environment_variables) and [CLI](https://huggingface.co/docs/huggingface_hub/en/guides/cli): revisions, offline use and authentication.
+- [Chat templates](https://huggingface.co/docs/transformers/en/chat_templating) and [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B): the optional conversation-formatting example.
+- [MiniLM model card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2): sentence pooling and normalization.
+- [Hosted chat completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion): explicit provider/model selection for the optional API exercise.

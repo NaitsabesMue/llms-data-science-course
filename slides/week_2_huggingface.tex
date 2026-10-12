@@ -1,327 +1,492 @@
 \documentclass[aspectratio=169]{beamer}
 \usepackage{beamerthemeAMU}
-\usepackage{amsmath}
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{listings}
-\usepackage{hyperref}
+\usepackage{amsmath,booktabs,array,listings,hyperref,tikz}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-
-% Listing style for code snippets
-\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
-
+\usetikzlibrary{arrows.meta,positioning}
+\lstset{basicstyle=\ttfamily\footnotesize,keywordstyle=\color{AMU_dk2}\bfseries,
+  commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible,breaklines=true}
 \title{Large Language Models in Data Science}
 \subtitle{Week 2: Hugging Face \& Transformers --- Using Pretrained Models}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
 \date{2026--2027}
-
 \begin{document}
+\begin{frame}[plain]\titlepage\end{frame}
 
-\begin{frame}[plain]
-  \titlepage
-\end{frame}
-
-\begin{frame}{Session Overview}
+\begin{frame}{From Understanding a Model to Using One}
+  \textbf{Week 1}: how tokens become contextual vectors and predictions.
+  \par\vspace{0.5em}
+  \textbf{Today}: load a trained model, inspect its outputs, and measure whether it works for a task.
   \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.55\linewidth}
-      \textbf{Lecture (1.5h)}
+    \begin{column}{0.53\linewidth}
+      \small\textbf{Lecture route}
       \begin{enumerate}
-        \item HF ecosystem: Hub and Transformers
-        \item Installing and authenticating
-        \item Model selection and checkpoints
-        \item Pipelines for quick inference
-        \item Tokenizers, models, and generation APIs
-        \item Devices, memory, and caching
+        \item Choose a model and its files.
+        \item Run a pipeline, then open its steps.
+        \item Generate text and format a conversation.
+        \item Measure quality, runtime and memory.
       \end{enumerate}
     \end{column}
-    \begin{column}{0.4\linewidth}
-      \textbf{Lab (1.5h)}
-      \begin{itemize}
-        \item Run pipelines for common NLP tasks
-        \item Manual tokenization + forward pass
-        \item Batch over a dataset with \texttt{datasets}
-        \item Pin and cache a specific checkpoint
-      \end{itemize}
+    \begin{column}{0.43\linewidth}
+      \small\textbf{Lab question}
+      \par Which sentiment classifier would you use for movie reviews, and what evidence supports your choice?
+      \par\vspace{0.5em}
+      Use DistilBERT and BERT for classification, then GPT-2 for generation. Small models let us inspect the mechanics.
     \end{column}
   \end{columns}
 \end{frame}
 
-\section{Hugging Face Ecosystem}
-
-\begin{frame}{What is Hugging Face?}
-  \begin{itemize}
-    \item \textbf{Hub (Definition)}: A public registry of \emph{models}, \emph{datasets}, and \emph{spaces}. Each repo has a model card with usage, license, and metadata.
-    \item \textbf{Why the Hub?} It centralizes discovery and reuse so we do not start from scratch.
-    \item \textbf{Transformers (Definition)}: A Python library that downloads checkpoints from the Hub and provides high-level and low-level APIs for inference and training.
-  \item \textbf{Datasets / Tokenizers (Definition)}: Libraries for efficient data loading and fast tokenization used by Transformers.
-    \item \textbf{Focus today}: \emph{Using pretrained models} safely and reproducibly (not contributing or fine-tuning yet).
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]{Install and Authenticate}
-  \begin{itemize}
-    \item \textbf{Goal}: Set up the minimal toolchain to run models locally or via hosted inference.
-    \item \textbf{Install (Definition)}: Add the client libraries to your Python environment.
-    \item \textbf{Authentication token (Definition)}: A personal access token that grants read access to private/gated repos and hosted endpoints.
-    \item \textbf{Why authenticate?} Some checkpoints are gated due to license or size; hosted APIs require identifying the caller.
-    \item \textbf{Cache (Definition)}: Local folder for downloaded configs/tokenizers/weights; defaults to \texttt{~/.cache/huggingface}.
-    \item \textbf{Why cache?} Avoid re-downloading and enable offline use. Configure via \texttt{HF\_HOME} or \texttt{TRANSFORMERS\_CACHE}.
-  \end{itemize}
-\end{frame}
-
-\section{Models and Checkpoints}
-
-\begin{frame}{Model Selection on the Hub}
-  \begin{itemize}
-    \item \textbf{Model card (Definition)}: A README describing task(s), license, intended use, and usage examples.
-    \item \textbf{Why read it?} Ensures the checkpoint matches your task and license constraints.
-    \item \textbf{Task tags (Definition)}: Standard labels like \texttt{text-classification}, \texttt{summarization}, \texttt{text-generation}, \texttt{embeddings}.
-   \item Prefer active repos with clear evals and permissive licenses where appropriate.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Checkpoints \& Revisions: Ensuring Reproducibility}
-  \begin{block}{The Problem: Your results might change overnight}
-    If you just use a model name like \texttt{"gpt2"}, you're getting the \emph{latest} version. If the author updates it, your experiment from last week may produce different results.
-  \end{block}
-
-  \begin{columns}[T]
-    \begin{column}{0.5\linewidth}
-      \textbf{Checkpoint (Definition)}
+\begin{frame}{Where Does the Model Run?}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.47\linewidth}
+      \textbf{On your machine}
       \begin{itemize}
-        \item A specific trained model release (e.g., `meta-llama/Llama-2-7b-chat-hf`).
+        \item Download model files from the Hub.
+        \item Python loads the model and runs it on your CPU or accelerator.
+        \item You choose the input handling and can inspect the outputs.
       \end{itemize}
-      
-      \textbf{Revision (Definition)}
-      \begin{itemize}
-        \item A \emph{specific version} of that model's checkpoint files, identified by a unique ID (a git commit hash).
-        \end{itemize}
     \end{column}
-    \begin{column}{0.5\linewidth}
-      \textbf{The Solution: Pin Your Revision!}
+    \begin{column}{0.47\linewidth}
+      \textbf{Through a hosted API}
       \begin{itemize}
-        \item \textbf{Why pin?} It guarantees you are using the \textbf{exact same} model files, ensuring your work is reproducible across machines and over time.
+        \item Send an input to a serving provider.
+        \item The provider runs the model and returns the result.
+        \item Access, limits and billing depend on the provider and account.
       \end{itemize}
     \end{column}
   \end{columns}
-\end{frame}
-
-
-\begin{frame}{Model Safety: Code Execution Risks}
-    \begin{block}{The Problem: Models from the Hub are code from the internet!}
-    Loading a model isn't just loading numbers; sometimes it can execute Python code. You need to know when and why this is happening.
-    \end{block}
-    
-    \begin{columns}[T]
-    \begin{column}{0.5\linewidth}
-        \begin{alertblock}{Risk: Custom Code }
-            \begin{itemize}
-                \item Some models require extra Python code from the repo to work.
-                \item When you set \texttt{trust\_remote\_code=True}, you allow \texttt{transformers} to download and \textbf{run that code}.
-                \item \textbf{Be careful!} Only do this if you trust the author.
-            \end{itemize}
-        \end{alertblock}
-    \end{column}
-    \begin{column}{0.5\linewidth}
-        \begin{exampleblock}{Solution: Safe Tensors}
-             \begin{itemize}
-                \item The old (\texttt{pytorch\_model.bin})is a known security risk that can execute code.
-                \item \textbf{Safetensors} (\texttt{.safetensors}) is a new format that \textbf{cannot execute code}. It only contains the model's numbers (weights).
-               \end{itemize}
-        \end{exampleblock}
-    \end{column}
-    \end{columns}
-\end{frame}
-
-\section{Fast Path: Pipelines}
-
-\begin{frame}[fragile]{Pipelines: One-Liners for Common Tasks}
- \begin{itemize}
-    \item \textbf{Pipeline (Definition)}: A preconfigured wrapper that applies the right tokenizer, model, and postprocessing for a task.
-    \item \textbf{Why use it?} Fast baseline and fewer moving parts for first runs.
-    \item \textbf{Why these?} They cover common evaluation-style tasks: labeling, summarizing, and embeddings.
-  \end{itemize} 
   \vspace{0.5em}
-
+  \small This lab starts locally. Hosted inference is an optional comparison.
 \end{frame}
 
+\section{Choose and Load a Checkpoint}
+\begin{frame}{What Does Hugging Face Provide?}
+  \small In Week 1, a \textbf{Transformer} was a neural-network architecture.
+  \par\vspace{0.4em}
+  Here, \texttt{transformers} is the name of a \textbf{Python library} for loading and using pretrained models, including BERT and GPT-2.
+  \par\vspace{0.6em}
+  \small\renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}p{3.2cm}p{9.0cm}@{}}
+    \toprule
+    \textbf{Component} & \textbf{What we use it for} \\
+    \midrule
+    Hub & Repositories of model files and datasets, with documentation and version history. Spaces host applications and demos. \\
+    \texttt{transformers} & Python code that loads a tokenizer and model, then runs it. \\
+    Datasets & Load, select and batch examples with their reference labels. \\
+    \bottomrule
+  \end{tabular}\par
+  \vspace{0.6em}
+  The Hub contains many kinds of models. The library supports multiple architectures, including some that do not use Transformer blocks.
+\end{frame}
 
-\begin{frame}[fragile]{Pipelines: Examples}
+\begin{frame}{Explore the Hub: Models and Data You Can Use}
+  \small Start with a question: what would you like to build or analyse?
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.49\linewidth}
+      \textbf{Models: try a capability}
+      \begin{itemize}
+        \item \href{https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english}{DistilBERT sentiment}\\Is a review positive or negative?
+        \item \href{https://huggingface.co/Qwen/Qwen3-0.6B}{Qwen3-0.6B}\\Give an instruction and generate a response.
+        \item \href{https://huggingface.co/openai/whisper-small}{Whisper}\\Turn a speech recording into text.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.47\linewidth}
+      \textbf{Datasets: inspect real examples}
+      \begin{itemize}
+        \item \href{https://huggingface.co/datasets/stanfordnlp/imdb}{IMDB}\\Movie reviews with sentiment labels: our lab's evaluation data.
+        \item \href{https://huggingface.co/datasets/PolyAI/banking77}{Banking77}\\Customer banking queries in 77 categories: what is the customer asking for?
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \par\vspace{0.6em}
+  \textbf{In the lab}: explore \href{https://huggingface.co/models}{Models} and \href{https://huggingface.co/datasets}{Datasets}. Search a topic you care about; filter by task or language. Open one model's usage example and preview a few dataset rows.
+  \note{Demonstrate the Hub in the lecture; students explore during the lab. The model and dataset lists are examples, not matched training pairs. DistilBERT was fine-tuned on SST-2; we test it on IMDB. Qwen3-0.6B is a small conversation example. Whisper and Banking77 show the breadth of the Hub, not additional required downloads.}
+\end{frame}
 
+\begin{frame}{What Do We Download When We Load a Model?}
+  \small On the Hub, we choose a trained sentiment model: \textbf{DistilBERT sentiment}.
+  \par\vspace{0.3em}
+  Its page points to files. Python downloads them to our machine:
+  \par\vspace{0.6em}
+  \renewcommand{\arraystretch}{1.45}
+  \begin{tabular}{@{}p{3.5cm}p{8.7cm}@{}}
+    \toprule
+    \textbf{Files we need} & \textbf{What they provide} \\
+    \midrule
+    Tokenizer files & The rules and vocabulary for turning a review into token IDs, as in Week 1. \\
+    Trained weights & The numbers learned during training. We load them instead of training the model ourselves. \\
+    Configuration & The settings needed to rebuild this model, including its size and output labels: \texttt{POSITIVE} and \texttt{NEGATIVE}. \\
+    \bottomrule
+  \end{tabular}\par
+  \vspace{0.6em}
+  A saved set of trained weights is called a \textbf{checkpoint}.
+  \par\vspace{0.3em}
+  Load the tokenizer and model from the \textbf{same Hub model page}, so their files belong together.
+  \note{Open the Files tab on the DistilBERT sentiment page and identify tokenizer files, model.safetensors and config.json. Connect learned weights to Week 1's training explanation. Explain the file version on the next slide. The prediction steps are introduced later with the pipeline example; do not introduce output-head terminology here.}
+\end{frame}
+
+\begin{frame}[fragile]{Load the Tokenizer and Model from One Version}
+  \small A saved version ID identifies the files from the previous slide: \textbf{tokenizer files, trained weights and configuration}.
+  \par\vspace{0.3em}
+  The loading functions call this version \texttt{revision}.
+  \begin{lstlisting}[language=Python]
+from huggingface_hub import HfApi
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+name = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
+# Look up the current version ID. Save it to reuse this version later.
+version_id = HfApi().model_info(name).sha
+# Load the tokenizer: text <-> token IDs.
+tokenizer = AutoTokenizer.from_pretrained(name, revision=version_id)
+# Load the classifier: configuration + trained weights.
+model = AutoModelForSequenceClassification.from_pretrained(
+    name, revision=version_id)
+  \end{lstlisting}
+  \small \texttt{tokenizer} prepares the text; it does not predict sentiment. \texttt{model} makes that prediction. Neither loading call runs a prediction yet.
+  \note{The previous variable tok referred only to the tokenizer. Use the full name here. Both calls use the same model page and version ID. Resolving the current ID again on a later day may select newer files; reuse the saved ID to repeat this version. Package versions, data and settings must also be recorded for the experiment.}
+\end{frame}
+
+\begin{frame}[fragile]{Model Files Can Also Include Python Code}
+  \small In our example, the installed \texttt{transformers} library already knows how to run DistilBERT. We download its trained weights and settings.
+  \par\vspace{0.4em}
+  Some Hub models also supply their own Python code. Loading the trained weights and running that code are \textbf{two separate choices}.
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.47\linewidth}
+      \textbf{How are the weights stored?}
+      \par\vspace{0.3em}
+      \texttt{safetensors} is a file format for storing the trained weights. Reading this format does not execute Python code from the weight file.
+    \end{column}
+    \begin{column}{0.49\linewidth}
+      \textbf{May the model run extra code?}
+      \par\vspace{0.3em}
+      \texttt{trust\_remote\_code=True} allows Python code from the model's Hub repository to run on your machine.
+      \par\vspace{0.3em}
+      Our DistilBERT example does not need it.
+    \end{column}
+  \end{columns}
+  \par\vspace{0.5em}
+  \begin{lstlisting}[language=Python]
+model = AutoModelForSequenceClassification.from_pretrained(
+    name, revision=version_id,
+    use_safetensors=True,    # Read weights in the safetensors format.
+    trust_remote_code=False)  # Do not run extra code from the Hub.
+  \end{lstlisting}
+  \note{The two options answer different questions. A safetensors weight file does not make separately downloaded Python code safe. Do not introduce pickle or deserialization terminology. If a later model requires custom code, examine that code and its source before enabling it. These flags do not replace the configuration or tokenizer.}
+\end{frame}
+
+\begin{frame}[fragile]{Prepare Python for the Lab}
+  \small We will run the models locally in a Jupyter notebook. First install the Python libraries used by the course.
+  \par\vspace{0.5em}
+  In a terminal, from the course repository folder:
+  \begin{lstlisting}[language=bash]
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+jupyter lab labs
+  \end{lstlisting}
+  \begin{itemize}
+    \item \texttt{.venv} is a separate Python environment for this course's libraries.
+    \item \texttt{requirements.txt} lists those libraries; \texttt{pip} installs them.
+    \item Jupyter opens the lab notebooks. Select \texttt{week\_2\_huggingface\_basics.ipynb}.
+  \end{itemize}
+  \small The first model download needs internet access and disk space. Our core models are public: no Hugging Face login is needed.
+  \note{Prepare during the lab, not during the screens-off lecture. Commands shown are for macOS/Linux; on Windows use the course's equivalent environment activation command. Check that the notebook kernel uses this environment. Account permissions and cache variables belong in optional setup notes, not this first introduction.}
+\end{frame}
+
+\section{Get a Prediction, Then Explain It}
+\begin{frame}{From a Review to a Prediction}
+  \small We want to ask: is ``I loved this movie'' positive or negative?
+  \begin{center}
+  \begin{tikzpicture}[font=\small,>=Stealth,
+    box/.style={draw=AMU_dk2,rounded corners=3pt,align=center,text width=2.4cm,minimum height=1.4cm}]
+    \node[box,fill=AMU_acc5!25] (text) at (0,0) {\textbf{Text}\\I loved this movie};
+    \node[box,fill=AMU_dk2!12] (tok) at (3.2,0) {\textbf{Tokenizer}\\Text becomes token IDs};
+    \node[box,fill=AMU_dk2!12] (model) at (6.4,0) {\textbf{Model}\\Scores negative and positive};
+    \node[box,fill=AMU_lt2!45] (output) at (9.6,0) {\textbf{Result}\\Label with the larger score};
+    \draw[->,thick] (text) -- (tok);
+    \draw[->,thick] (tok) -- (model);
+    \draw[->,thick] (model) -- (output);
+  \end{tikzpicture}
+  \end{center}
+  \texttt{pipeline()} is a Python helper that connects these steps. We give it text and receive the result.
+  \par\vspace{0.5em}
+  Using a trained model to make a prediction is called \textbf{inference}. Its weights stay fixed during this prediction.
+  \note{Trace the diagram left to right. Token IDs and learned weights connect directly to Week 1. Introduce pipeline and inference here, without preprocessing/postprocessing jargon. Next, show one actual call before inspecting individual steps.}
+\end{frame}
+
+\begin{frame}[fragile]{Our First Call: Classify One Review}
+  \small We specify the task and the trained model to use:
   \begin{lstlisting}[language=Python]
 from transformers import pipeline
-
-# Sentiment analysis
-clf = pipeline("text-classification",
-               model="distilbert-base-uncased-finetuned-sst-2-english")
-clf(["I love this!", "This is terrible..."])
-
-# Masked language modeling (fill-mask)
-mlm = pipeline("fill-mask", model="bert-base-uncased")
-mlm("Paris is the [MASK] of France.")
-
-# Text generation
-gen = pipeline("text-generation", model="gpt2")
-gen("Once upon a time", max_new_tokens=40, do_sample=True, temperature=0.8)
+classifier = pipeline(
+    "text-classification",
+    model="distilbert/distilbert-base-uncased-finetuned-sst-2-english",
+    device="cpu")
+result = classifier("I loved this movie")
+print(result)
   \end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]{Other Useful Pipelines}
-  \begin{lstlisting}[language=Python]
-# Zero-shot classification
-zsc = pipeline("zero-shot-classification",
-               model="facebook/bart-large-mnli")
-zsc("The stock rallied 5%.", candidate_labels=["finance", "sports"]) 
-
-# Summarization
-summ = pipeline("summarization", model="facebook/bart-large-cnn")
-summ(long_article_text, max_length=128)
-
-# Embeddings (feature extraction)
-emb = pipeline("feature-extraction", model="sentence-transformers/all-MiniLM-L6-v2")
-vec = emb("A short sentence.", pooling="mean", normalize=True)
-  \end{lstlisting}
-\end{frame}
-
-\section{Tokenizers and Models}
-
-\begin{frame}[fragile]{Manual Tokenization and Forward Pass}
   \begin{itemize}
-    \item \textbf{Tokenizer (Definition)}: Converts text to token IDs and attention masks that the model understands.
-    \item \textbf{Model head (Definition)}: A task-specific layer (e.g., classification) on top of a base encoder/decoder.
-    \item \textbf{Why manual mode?} More control over batching, padding, truncation, and outputs.
-    \item \texttt{AutoTokenizer} / \texttt{AutoModelFor\*} select correct classes from the checkpoint config; inspect \texttt{config} for labels and limits.
+    \item \texttt{classifier} holds the pipeline: tokenizer, model and result handling.
+    \item \texttt{device="cpu"} runs the calculation on the computer's main processor.
+    \item The result contains a \texttt{label} and its \texttt{score}; inspect both in the lab.
   \end{itemize}
+  \small Try ``This movie was terrible'' and ``The movie lasts two hours.'' The model must choose positive or negative: it has no neutral label.
+  \note{For a repeated experiment, pass the saved revision=version_id from slide 7. This short example omits version arguments to concentrate on task, model, input and output. Do not present an invented numeric score as an executed result. Ask students why a neutral input is informative.}
 \end{frame}
-\begin{frame}[fragile]{Manual Tokenization and Forward Pass - Python example}
+
+\begin{frame}{From Logits to Sentiment Probabilities}
+  \small
+  \setlength{\abovedisplayskip}{4pt}\setlength{\belowdisplayskip}{4pt}
+  \setlength{\abovedisplayshortskip}{2pt}\setlength{\belowdisplayshortskip}{4pt}
+  The model turns the review into a vector $h$. Its final layer calculates two scores:
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\linewidth}
+      \textbf{1. Calculate the raw scores: logits}
+      \[
+        z_c = w_c^{\mathsf T}h + b_c
+      \]
+      \small $c$ is a class: negative or positive.\\
+      $w_c$: learned weight vector.\\
+      $b_c$: bias, a constant learned during training.
+      \par\vspace{0.4em}
+      Logits can be negative. They are scores, not probabilities.
+    \end{column}
+    \begin{column}{0.48\linewidth}
+      \textbf{2. Convert the logits: softmax}
+      \[
+        p_c = \frac{e^{z_c}}{e^{z_{\mathrm{neg}}}+e^{z_{\mathrm{pos}}}}
+      \]
+      \small Exponentiation makes both values positive. Dividing by their sum makes the probabilities add up to one.
+      \par\vspace{0.4em}
+      The pipeline chooses the class with the larger $p_c$ and returns that value as its \texttt{score}.
+    \end{column}
+  \end{columns}
+  \par\vspace{0.2em}
+  \textbf{Illustrative example}: $z_{\mathrm{neg}}=-1$, $z_{\mathrm{pos}}=2$.
+  \[
+    p_{\mathrm{pos}} = \frac{e^2}{e^{-1}+e^2}\approx 0.953,
+    \qquad p_{\mathrm{neg}}\approx 0.047
+  \]
+  \small Prediction: \texttt{POSITIVE}. A score of $0.953$ does not establish a $95.3\%$ chance that the sentence expresses positive sentiment.
+  \note{h denotes the vector actually entering the final linear classifier, after any preceding processing; do not imply that every model directly classifies an unprocessed token embedding. In this DistilBERT checkpoint a learned pre-classifier and activation precede the final layer. w and b are loaded trained weights, not calculated anew from the review. This formula produces logits; the term does not mean taking a logarithm of the input. Softmax([-1,2]) is approximately [0.0474,0.9526]. Toy scores are chosen for explanation. Real score-to-label order comes from config.id2label.}
+\end{frame}
+
+\begin{frame}[fragile]{Inside the Pipeline (1/2): Text to Raw Scores}
+  \small Inspect the pipeline step by step, using the tokenizer and model loaded on slide 7.
+  \[
+    \text{Text}\xrightarrow{\text{tokenizer}}\text{Token IDs}
+    \xrightarrow{\text{model}}\text{Logits}
+  \]
   \begin{lstlisting}[language=Python]
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
-name = "distilbert-base-uncased-finetuned-sst-2-english"
-tok = AutoTokenizer.from_pretrained(name)
-model = AutoModelForSequenceClassification.from_pretrained(name)
-
-batch = tok(["I love this!", "This is terrible..."],
-            padding=True, truncation=True, return_tensors="pt")
-with torch.no_grad():
-    out = model(**batch)
-probs = out.logits.softmax(-1)
-probs
+text = "I loved this movie"  # 1. Supply the text.
+inputs = tokenizer(text, return_tensors="pt")  # 2. Tokenize.
+print("Token IDs:", inputs["input_ids"])
+model.eval()  # Set training=False on the model and its layers.
+with torch.inference_mode():  # 3. Run the trained model.
+    logits = model(**inputs).logits  # ** passes dictionary entries by name.
+print("Raw scores:", logits)
   \end{lstlisting}
-
-
+  \small \texttt{torch} is PyTorch, the library running the numerical calculations. \texttt{return\_tensors="pt"} returns PyTorch arrays, called tensors.
+  \par\vspace{0.3em}
+  \texttt{eval()} disables dropout: the random removal of activations used during training. \texttt{inference\_mode()} disables gradient tracking. Neither changes the learned weights.
+  \note{We inspect the whole pipeline, not individual Transformer layers. Steps 1-3 expose the text, tokenizer inputs and model output; steps 4-5 follow on the next slide. model(**inputs) unpacks the tokenizer's input dictionary into named arguments; this model calculation is one forward pass. For this tokenizer, it is equivalent to model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask']). The tokenizer also returns a padding mask, explained with batching later. eval() calls train(False), setting the training flag on the model and its submodules; dropout stops randomly zeroing activations. Hugging Face from_pretrained() already sets evaluation mode by default, so this explicit call documents and ensures the intended mode. It does not disable gradient tracking; inference_mode() handles that separately. Compare against classifier(text) using the same model version.}
 \end{frame}
 
-\begin{frame}[fragile]{Generation with \texttt{generate()}}
+\begin{frame}[fragile]{Inside the Pipeline (2/2): Raw Scores to a Label}
+  \small Continue with these logits: apply softmax, then select the label.
+  \[
+    \text{Logits}\xrightarrow{\text{softmax}}\text{Probabilities}
+    \xrightarrow{\text{largest value}}\text{Label}
+  \]
   \begin{lstlisting}[language=Python]
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
-name = "gpt2"
-tok = AutoTokenizer.from_pretrained(name)
-lm = AutoModelForCausalLM.from_pretrained(name)
-
-prompt = "In data science, transformers are"
-inputs = tok(prompt, return_tensors="pt")
-outputs = lm.generate(**inputs,
-                      max_new_tokens=64,
-                      do_sample=True,
-                      temperature=0.7,
-                      top_p=0.9,
-                      repetition_penalty=1.1)
-print(tok.decode(outputs[0], skip_special_tokens=True))
+# 4. Convert the two scores into class probabilities.
+probabilities = logits.softmax(dim=-1)
+for index, probability in enumerate(probabilities[0]):
+    print(model.config.id2label[index], probability.item())
+# 5. Select the label with the largest probability.
+chosen_index = probabilities[0].argmax().item()
+print("Prediction:", model.config.id2label[chosen_index])
   \end{lstlisting}
-\end{frame}
-
-\begin{frame}{Decoding: tuning generation parameters}
   \begin{itemize}
-    \item \textbf{Decoding (Definition)}: Strategy to choose next tokens (sampling vs. beam search).
-    \item \textbf{Why tune it?} Balance creativity vs. determinism and mitigate repetition.
-    \item \textbf{max\_new\_tokens}: Upper bound on generated tokens beyond the prompt. Higher = longer outputs; set a cap to avoid runaways.
-    \item \textbf{temperature}: Scales logits before sampling. Lower (e.g., 0.2) = conservative; higher (e.g., 0.8) = more diverse.
-    \item \textbf{top\_p} (nucleus): Sample from the smallest set whose cumulative prob \(\ge p\). Lower p = safer, fewer risky tokens.
-    \item \textbf{top\_k}: Sample from top-k probable tokens. Lower k = safer; can be combined with \texttt{top\_p}.
-     \item \textbf{repetition\_penalty}: >1.0 discourages repeating tokens/phrases (e.g., 1.05–1.2). Too high can harm fluency.
+    \item \texttt{probabilities[0]} selects our one review; its last dimension contains the two classes.
+    \item \texttt{config.id2label} maps score positions to labels; \texttt{argmax()} finds the largest value's position.
   \end{itemize}
+  \small Compare the label with the one returned by \texttt{classifier(text)}.
+  \note{dim=-1 applies softmax over the class dimension. item() converts a scalar tensor into a Python number. Use the same input and model version for the pipeline comparison. The learned architecture and weights are unchanged; we are making the wrapper's steps explicit.}
 \end{frame}
 
-\begin{frame}{Sampling vs. Beam Search}
-  \begin{itemize}
-    \item \textbf{Sampling (Definition)}: At each step, draw the next token at random from a truncated distribution (controlled by \texttt{temperature}, \texttt{top\_p}, \texttt{top\_k}).
-    \item \textbf{Beam search (Definition)}: Keep the top \(N\) partial sequences (\emph{beams}) by cumulative log-probability; expand each beam and keep the best until stopping.
-    \item \textbf{Determinism}: Sampling is non-deterministic (varies run-to-run); beam search is deterministic for fixed settings.
-    \item \textbf{Diversity}: Sampling is more diverse/creative; beam search is safer but can be generic or repetitive.
-    \item \textbf{Speed}: Sampling is fast; beam search is slower, roughly proportional to \texttt{num\_beams}.
-    \item \textbf{Controls}: Sampling uses \texttt{temperature}, \texttt{top\_p}, \texttt{top\_k}. Beam search uses \texttt{num\_beams}, \texttt{length\_penalty}, \texttt{early\_stopping}.
-    \item \textbf{When to use}: Creative writing/brainstorming \(\rightarrow\) sampling. Single best answer (e.g., translation/QA) \(\rightarrow\) greedy/beam search.
-  \end{itemize}
-\end{frame}
-
-\section{Devices and Performance}
-
-\begin{frame}[fragile]{Devices, Dtypes, and Memory}
-  \begin{itemize}
-    \item \textbf{Device map (Definition)}: Automatic placement of model layers across CPU/GPU/MPS via Accelerate.
-    \item \textbf{Why?} Fit larger models and use available accelerators without manual plumbing.
-    \item \textbf{Dtype (Definition)}: Numeric precision used for weights and activations (e.g., \texttt{float32}, \texttt{float16}).
-    \item \textbf{Why lower precision?} Save memory and increase throughput with minimal quality drop.
-    \item \textbf{Quantization (Definition)}: Load weights in 8/4-bit (\texttt{bitsandbytes}) to further reduce memory.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Caching, Offline, and Reproducibility}
-  \begin{itemize}
-    \item \textbf{Cache dirs (Definition)}: \texttt{TRANSFORMERS\_CACHE}, \texttt{HF\_HOME} control where files are stored.
-    \item \textbf{Why set them?} Keep caches on faster disks or shared locations.
-    \item \textbf{Offline mode (Definition)}: \texttt{HF\_HUB\_OFFLINE=1} forces use of local cache only.
-    \item \textbf{Why offline?} Stable experiments and air-gapped environments.
-    \item Pin exact versions with \texttt{revision=} and store \texttt{model.config.to\_dict()} with results for traceability.
-  \end{itemize}
-\end{frame}
-
-
-\section{Inference API (Optional)}
-
-\begin{frame}[fragile]{Hosted Inference with \texttt{InferenceClient}}
+\begin{frame}[fragile]{A Different Task: Fill a Missing Word}
+  \small BERT can suggest a token at a marked position in the text:
   \begin{lstlisting}[language=Python]
-from huggingface_hub import InferenceClient
-
-client = InferenceClient(
-    model="facebook/bart-large-cnn", token=os.getenv("HF_TOKEN")
-)
-summary = client.summarization("""Long article text here...""")
-print(summary)
+fill_missing = pipeline(
+    "fill-mask", model="google-bert/bert-base-uncased",
+    device="cpu")
+suggestions = fill_missing("Paris is the [MASK] of France.")
+for suggestion in suggestions:
+    print(suggestion["token_str"], suggestion["score"])
   \end{lstlisting}
   \begin{itemize}
-    \item \textbf{Inference API (Definition)}: Managed endpoints for common tasks; billable and rate-limited.
-    \item \textbf{Why use it?} Zero local setup for quick demos or when hardware is unavailable.
+    \item \texttt{[MASK]} marks the position to fill. BERT uses the words on both sides as context.
+    \item Each suggestion contains a candidate token and its model probability.
+    \item Sentiment classification scores \textbf{two labels}; this task scores \textbf{30,522 tokens} in this BERT model's vocabulary (the tokenizer's fixed list of tokens).
   \end{itemize}
+  \small The task determines what the model's output means. Later we will generate text one new token at a time.
+  \note{Keep the original BERT example. Connect bidirectional context to Week 1's encoder explanation. We do not need output-head terminology to explain the difference in output scores. In the lab, also retain the original Marseille example.}
 \end{frame}
 
-\section{Takeaways}
-
-\begin{frame}{Key Takeaways}
+\section{Generate Text and Format a Conversation}
+\begin{frame}[fragile]{Generate Text: Continue a Prompt}
+  \small A \textbf{prompt} is the text we give the model. GPT-2 continues it by choosing a next token, appending it, and repeating --- the loop from Week 1.
+  \begin{lstlisting}[language=Python]
+generator = pipeline(
+    "text-generation", model="openai-community/gpt2",
+    device="cpu")
+result = generator(
+    "A red toy robot",
+    max_new_tokens=40, do_sample=False,
+    return_full_text=False)
+print(result[0]["generated_text"])
+  \end{lstlisting}
   \begin{itemize}
-    \item Start with \textbf{pipelines} for quick wins; drop to tokenizers/models for control.
-    \item Pick checkpoints by \textbf{task, license, and metrics}; pin with \texttt{revision=}.
-    \item Use \textbf{device\_map} and dtypes to fit memory and speed constraints.
-    \item Cache wisely; enable offline mode for reproducibility.
+    \item \texttt{max\_new\_tokens=40}: stop after at most 40 new tokens.
+    \item \texttt{do\_sample=False}: choose the highest-probability token at each step.
+    \item \texttt{return\_full\_text=False}: return only the new text, without the prompt.
   \end{itemize}
+  \small GPT-2 was trained on web text to predict the next token from the preceding tokens.
+  \note{The pipeline manages repeated model calls and turns generated token IDs back into text. return_full_text=False controls the returned text; the model still uses the full prompt as context. If a hypothetical continuation were ``walked across the table.'', False would return that new text alone, while True would return ``A red toy robot walked across the table.'' This is an illustration, not an observed model output. In the notebook, use tokenizer.decode() to do that conversion yourself; model.generate() manages the generation loop directly. This is generation rather than training: the weights stay fixed. Training reference: https://huggingface.co/openai-community/gpt2.}
 \end{frame}
 
-\begin{frame}{Glossary Cheat Sheet}
+\begin{frame}[fragile]{Generation Settings: What Can We Change?}
+  \small Compare with the previous call: now choose tokens randomly according to the model's probabilities. This is called \textbf{sampling}.
+  \begin{lstlisting}[language=Python]
+result = generator(
+    "A red toy robot", max_new_tokens=40,
+    do_sample=True, temperature=0.7, top_p=0.9, top_k=0,
+    return_full_text=False)
+  \end{lstlisting}
   \begin{itemize}
-    \item \textbf{Hub}: Registry of models/datasets/spaces with model cards.
-    \item \textbf{Transformer}: Library for loading checkpoints and running tasks.
-    \item \textbf{Checkpoint}: Released weights/config for a model; pin with \texttt{revision=}.
-    \item \textbf{Pipeline}: One-line task runner that bundles tokenizer+model.
-    \item \textbf{Tokenizer}: Maps text to token IDs and attention masks.
-    \item \textbf{Device map}: Automatic layer placement across CPU/GPU/MPS.
-    \item \textbf{Dtype/Quantization}: Numeric precision and compressed weight formats.
-    \item \textbf{Dataset}: Table-like data with fast transforms and batching.
-    \item \textbf{Cache/Offline}: Local storage and network-free operation.
+    \item \texttt{temperature}: a lower positive value favours the most likely tokens more strongly; a higher value makes the probabilities more even.
+    \item \texttt{top\_p=0.9}: keep the most likely tokens until their probabilities total at least $0.9$; sample within that set.
+    \item \texttt{top\_k=0}: disable an additional limit on the number of candidate tokens.
+  \end{itemize}
+  \small In the lab, change one setting at a time and repeat the call. Different wording is not evidence of better or more accurate answers.
+  \note{These sampling controls require do_sample=True; temperature must be positive. With do_sample=False and one beam, decoding is greedy. Explain top_k only as disabling an additional default filter here; the notebook uses the same control. More detailed decoding and hallucination explanations remain in Week 1.}
+\end{frame}
+
+\begin{frame}{A Conversation Must Be Formatted for the Model}
+  \small GPT-2 continues plain text. A chat model is trained on conversations where markers identify \textbf{who is speaking} and where the next reply starts.
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.44\linewidth}
+      \textbf{Messages we supply}
+      \begin{itemize}
+        \item \textbf{user}: ``Explain attention.''
+        \item \textbf{assistant}: the model's reply.
+      \end{itemize}
+      \small A message contains a \textbf{role} (the speaker) and \textbf{content} (their text).
+    \end{column}
+    \begin{column}{0.52\linewidth}
+      \textbf{The model receives one sequence}
+      \begin{block}{Illustrative format}
+        \small [user starts] Explain attention.\\{}[user ends] [assistant starts]
+      \end{block}
+    \end{column}
+  \end{columns}
+  \note{Square-bracket markers are an illustration, not literal tokens to copy. We supply only the user message for this first request; no assistant reply is known yet. A later conversation includes earlier assistant messages. This formatting supplies context; it does not modify the weights.}
+\end{frame}
+
+\section{Measure Quality and Runtime}
+\begin{frame}{Where Do the Calculations Run?}
+  \small The model's weights and its input arrays must be in memory on the device doing the calculation.
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.47\linewidth}
+      \textbf{CPU: the computer's main processor}
+      \begin{itemize}
+        \item Our examples use \texttt{device="cpu"}.
+        \item This is a starting point that works without a separate graphics card.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.49\linewidth}
+      \textbf{GPU: a processor for parallel calculations}
+      \begin{itemize}
+        \item NVIDIA GPUs: CUDA (\texttt{cuda}).
+        \item Supported AMD GPUs: ROCm (also \texttt{cuda} in PyTorch).
+        \item Compatible Macs: MPS (\texttt{mps}).
+        \item It may speed up inference, but the model and inputs must fit in available memory.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \par\vspace{0.5em}
+  Model weights take space, and the calculation needs additional working memory. A model that downloads successfully may still be too large to run.
+  \par\vspace{0.4em}
+  \textbf{In the lab}: start on CPU. Try another available device only after the example works, and measure the difference.
+  \note{Use one device for the model and inputs in this lab. CUDA, ROCm and MPS are software support for GPU calculations, not models. PyTorch's ROCm build uses the torch.cuda API and the device string 'cuda' for supported AMD GPUs; this does not mean it runs NVIDIA CUDA on AMD. AMD compatibility depends on the GPU, operating system and installed PyTorch/ROCm versions; consult the official support matrix rather than assuming every AMD GPU works. For manual code, model.to(device) and inputs.to(device) move both. Advanced automatic placement, reduced precision and quantization are optional; do not introduce those terms here. References: https://docs.pytorch.org/docs/stable/notes/hip.html and https://rocm.docs.amd.com/en/latest/compatibility/compatibility-matrix.html.}
+\end{frame}
+
+\begin{frame}{Batching: Process Several Reviews Together}
+  \small A \textbf{batch} is a group of inputs sent through the model in one call. To make a rectangular array, the tokenizer adds \textbf{padding} to shorter inputs.
+  \begin{center}
+  \begin{tikzpicture}[font=\small]
+    \foreach \label/\count/\y in {short review/3/0,long review/8/-0.65} {
+      \node[anchor=east] at (-0.2,\y) {\label};
+      \foreach \x in {1,...,8} {
+        \ifnum\x>\count
+          \node[draw=AMU_dk2!40,fill=AMU_dk2!6,minimum width=0.8cm,minimum height=0.5cm] at (\x,\y) {pad};
+        \else
+          \node[draw=AMU_dk2,fill=AMU_acc5!25,minimum width=0.8cm,minimum height=0.5cm] at (\x,\y) {token};
+        \fi
+      }
+    }
+  \end{tikzpicture}
+  \end{center}
+  \small The tokenizer also returns \texttt{attention\_mask}: $1$ for real input tokens, $0$ for padding. It tells this classifier which positions to ignore.
+  \par\vspace{0.4em}
+  More reviews per call may improve \textbf{throughput}: reviews processed per second. Larger batches also need more memory. Measure both.
+  \note{The mask marks valid positions versus padding; it is not the learned attention weights and is not the causal mask from Week 1. The diagram illustrates input lengths, not actual tokenization of printed sentences. Passing a list to a pipeline does not itself guarantee one batch; use batch_size or tokenize several inputs together as in the notebook.}
+\end{frame}
+
+\begin{frame}{The Lab: Use a Model and Defend Your Choice}
+  \begin{enumerate}
+    \item Run the sentiment pipeline. Try positive, negative and neutral reviews.
+    \item Run BERT's missing-token example and GPT-2's continuation. Explain how their outputs differ.
+    \item Open the sentiment pipeline: inspect token IDs, raw scores, probabilities and labels.
+    \item Compare batch sizes, then compare the two sentiment classifiers on the same IMDB sample.
+  \end{enumerate}
+  \textbf{Explain your choice}: which model would you use, for which task, and what do its errors and measured runtime tell you?
+  \par\vspace{0.5em}
+  \small Collaborate and use tools. Chat models, sentence similarity, precision experiments and hosted calls are optional extensions after the core comparison.
+  \note{No submission requirement. Keep private results local. Students complete the marked comparison functions in the notebook; the worked sentiment pipeline and benchmarking helper provide a starting point. Protect time for reading errors rather than requiring all optional downloads.}
+\end{frame}
+
+\begin{frame}{Outlook: Fine-Tuning for a Specific Task}
+  \small \textbf{Fine-tuning}: continue training a pretrained model on task-specific data.
+  \par\vspace{0.3em}
+  \begin{center}
+    % Show the author and first two paragraphs at a readable size.
+    % The complete, unmodified screenshot is retained in figures/.
+    % Original PNG: 1092 x 1388 pixels at 144 dpi; trim 1018 pixels below.
+    \includegraphics[width=0.94\linewidth,trim=0 509bp 0 0,clip]{figures/brian_armstrong_fine_tuning_2026_10_12.png}
+  \end{center}
+  \vspace{-0.5em}
+  {\scriptsize Brian Armstrong; screenshot: 12 Oct 2026.
+  \href{https://www.coinbase.com/blog/part-three-owning-intelligence-series}{Coinbase write-up, 8 Oct 2026}: company-reported fraud results.\par}
+  \vspace{0.4em}
+  \small Prompting changes the input; fine-tuning changes model parameters.\par
+  Test whether the adapted model improves results on examples \textbf{not used for training}.
+  \note{This is an outlook after the lab briefing: today we use existing trained models; a next step is adapting one to our own task. The tweet's first two paragraphs are shown; its full screenshot is preserved. Open weights mean that model parameters are available to download, subject to their licence. Qwen3.5-9B has nine billion parameters. Coinbase reports adapting it to Onramp fraud classification using historical fraud outcomes. Their technical account uses reinforcement learning and LoRA; do not introduce these methods here. The example supports investigating task-specific adaptation, not a claim that every small model beats every frontier model. The detailed comparison is against Opus 4.5. Coinbase's figure labels its detection improvements as percentage-point differences, despite percent shorthand in the article; do not read the cropped charts as relative gains. Quality and serving latency were evaluated separately. Distinguish further training from adding examples or documents to a prompt: prompting leaves model parameters fixed. Evaluation examples must be kept separate from the training data. Technical source checked 12 October 2026: https://www.coinbase.com/blog/part-three-owning-intelligence-series.}
+\end{frame}
+
+\begin{frame}{Further Reading}
+  \begin{itemize}
+    \item \href{https://huggingface.co/docs/transformers/en/pipeline_tutorial}{Pipeline tutorial}\\Start with a task, model and input; then explore supported tasks.
+    \item \href{https://huggingface.co/learn/llm-course/chapter2/2}{Hugging Face course: Behind the pipeline}\\Walk through input preparation, model scores and result handling.
+    \item \href{https://huggingface.co/docs/transformers/en/chat_templating}{Chat templates}\\See how messages become the token sequence a chat model expects.
+    \item \href{https://huggingface.co/docs/huggingface_hub/en/guides/download}{Hub downloads and versions}\\Reuse exact model files and understand the local cache.
   \end{itemize}
 \end{frame}
 

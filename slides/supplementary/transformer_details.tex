@@ -1,0 +1,117 @@
+% Optional attention and Transformer details, preserved from Week 1.
+% Not included in the main lecture PDF.
+% To use as backup slides, add \appendix and
+% \input{supplementary/transformer_details.tex} before \end{document}
+% in week_1_intro.tex. The figures use its existing preamble.
+
+\begin{frame}{Combine Values: The Attention Contribution}
+  \small The \textbf{value vectors} supply the information. Multiply each by its attention weight, then add.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, minimum width=2.5cm, minimum height=0.85cm},
+    arrow/.style={->, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!25] (red) at (0,0) {\texttt{red}\\value $[1,0,0]$};
+    \node[box, fill=AMU_acc5!25] (toy) at (4,0) {\texttt{toy}\\value $[0,1,0]$};
+    \node[box, fill=AMU_acc5!25] (robot) at (8,0) {\texttt{robot}\\value $[0,0,1]$};
+    \node[box, text width=4.4cm, fill=AMU_dk2!15] (out) at (4,-1.9)
+      {Attention contribution\\at \texttt{robot}\\$[0.397,\;0.491,\;0.111]$};
+    \draw[arrow, line width=1.5pt] (red.south) -- node[above, sloped] {$0.397$} (out.north west);
+    \draw[arrow, line width=2pt] (toy.south) -- node[right] {$0.491$} (out.north);
+    \draw[arrow, line width=0.6pt] (robot.south) -- node[above, sloped] {$0.111$} (out.north east);
+  \end{tikzpicture}
+  \end{center}
+  \small As a matrix product, one row of weights combines the three rows of $V$:
+  \[
+    \begin{bmatrix}0.397&0.491&0.111\end{bmatrix}
+    \begin{bmatrix}1&0&0\\0&1&0\\0&0&1\end{bmatrix}
+    =\begin{bmatrix}0.397&0.491&0.111\end{bmatrix}.
+  \]
+  {\scriptsize Toy value/output maps are identity; numbers rounded. This contribution has not yet been added to the original vector.}
+  \note{The full matrix product is AV: the attention matrix A has one weight row for each receiving position, and V has one value row for each supplying position. For the displayed robot row, the first result coordinate is 0.397 times 1 plus 0.491 times 0 plus 0.111 times 0. Repeat for the other coordinates if needed. Values happen to equal input representations because the toy learned value matrix is identity; real values are learned transformations. One attention head is one such query/key/value calculation. Practical models combine multiple heads and apply an output projection before residual addition; the output projection is identity in our toy example. These coordinate axes are not word meanings or literal semantic features.}
+\end{frame}
+
+\begin{frame}{Add Context to the Existing Representation}
+  \small The \textbf{residual connection} adds the attention contribution to the vector that entered this stage.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, text width=3.2cm, minimum height=0.9cm},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!25] (original) at (0,1) {Original vector\\at \texttt{robot}\\$[0,0,1]$};
+    \node[box, fill=AMU_dk2!15] (contribution) at (0,-1) {Attention contribution\\$[0.397,0.491,0.111]$};
+    \node[circle, draw=AMU_dk2, minimum size=0.7cm, inner sep=0pt] (add) at (3.4,0) {$+$};
+    \node[box, fill=AMU_lt2!65] (result) at (7.4,0) {Vector after addition\\$[0.397,0.491,1.111]$};
+    \draw[arrow] (original.east) -| (add.north);
+    \draw[arrow] (contribution.east) -| (add.south);
+    \draw[arrow] (add) -- (result);
+  \end{tikzpicture}
+  \end{center}
+  \small The original vector has a \textbf{direct path} to the addition. Attention supplies an extra contribution.
+  \par\vspace{0.3em}
+  For every position together: \quad $\text{vectors after addition}=X+AV$ \quad in this toy model.
+  \par\vspace{0.3em}
+  The token is still \texttt{robot}. Its representation now incorporates context from \texttt{red} and \texttt{toy}.
+  \par\vspace{0.2em}
+  {\scriptsize One head, identity output map, normalisation omitted.
+  \href{https://arxiv.org/abs/1706.03762}{Original paper, Section 3.1}.}
+  \note{Keep the attention contribution distinct from the representation after addition. A weight of 0.111 on robot's value is not the proportion of its original representation retained in the complete update; the original input also follows the direct residual path. The numbers in the final vector are coordinates and need not sum to one. This is the attention residual result, not the output of a complete Transformer block: feed-forward processing and normalisation remain. In the full architecture, use X plus the projected combined head outputs; the toy identity output map makes that contribution exactly AV. The geometric opening slide illustrated this original-plus-change idea without specifying coordinates.}
+\end{frame}
+
+\begin{frame}{Inside One Transformer Block}
+  \small A \textbf{Transformer} is built from repeated layers called \textbf{blocks}. Each block updates the token vectors.
+  \par\vspace{0.3em}
+  \textbf{Position information} records where each token occurs in the sequence.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center,
+      text width=1.8cm, minimum height=1.1cm, inner sep=4pt},
+    add/.style={circle, draw=AMU_dk2, fill=white, minimum size=0.55cm, inner sep=0pt},
+    arrow/.style={->, >=Stealth, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_acc5!35] (input) at (0,0) {Current\\token vectors};
+    \node[box, fill=AMU_lt2!65, text width=2.3cm] (attention) at (3,0) {\textbf{Self-attention}\\Combine values\\across positions};
+    \node[add] (add1) at (4.8,0) {$+$};
+    \node[box, fill=AMU_dk2!15, text width=2.3cm] (ff) at (7,0) {\textbf{Feed-forward}\\Process each\\vector};
+    \node[add] (add2) at (8.8,0) {$+$};
+    \node[box, fill=AMU_acc5!35] (output) at (11,0) {Updated\\token vectors};
+    \draw[arrow] (input) -- (attention);
+    \draw[arrow] (attention) -- (add1);
+    \draw[arrow] (add1) -- (ff);
+    \draw[arrow] (ff) -- (add2);
+    \draw[arrow] (add2) -- (output);
+    \draw[arrow, draw=AMU_dk2] (input.north) -- (0,1.65) --
+      node[above, font=\footnotesize] {copy input vectors} (4.8,1.65) -- (add1.north);
+    \draw[arrow, draw=AMU_dk2] (5.5,0) -- (5.5,1.65) --
+      node[above, font=\footnotesize] {copy vectors} (8.8,1.65) -- (add2.north);
+  \end{tikzpicture}
+  \end{center}
+  \small The feed-forward stage uses the \textbf{same neural network separately at each position}.
+  \par\vspace{0.3em}
+  Pass the output vectors to the next block.
+  \par\vspace{0.3em}
+  {\scriptsize Residual additions are shown; normalisation is omitted.}
+  \note{Unlike the previous serial drawing, both residual paths are now visible. The first bypass carries the input to attention; the second carries the result after that addition to the feed-forward addition. Each plus is elementwise vector addition, not token concatenation or token selection. This is the main information flow in an encoder or GPT-style decoder block, with normalisation omitted. Position information is available in the initial representations or attention operations; the drawing does not imply that position vectors are added at every block. Multiple attention heads produce separate mixtures and an output projection combines them before the first addition. In the original Transformer, layer normalisation follows each residual addition; many modern decoder architectures normalise before attention and feed-forward. Encoder-decoder decoder blocks add cross-attention and its residual connection, introduced later. Stacked blocks are separate from repeated generation steps. Sources: Vaswani et al., Section 3.1; Jay Alammar, The Illustrated Transformer, The Residuals. Optional companion video: DeepLearning.AI, How Transformer LLMs Work, The Transformer Block (6 minutes).}
+\end{frame}
+
+\begin{frame}{The Next Block Computes New Queries and Keys}
+  \small After attention and feed-forward, the next block receives \textbf{richer token representations}.
+  \begin{center}
+  \begin{tikzpicture}[
+    font=\small, >=Stealth,
+    box/.style={draw=AMU_dk2, rounded corners=3pt, align=center, text width=3.1cm, minimum height=1.25cm},
+    arrow/.style={->, thick, draw=AMU_acc1}]
+    \node[box, fill=AMU_lt2!65] (updated) at (0,0) {\texttt{robot}\\with context from\\\texttt{red} and \texttt{toy}};
+    \node[box, fill=AMU_dk2!15] (maps) at (4.5,0) {Next block's\\learned query, key,\\and value matrices};
+    \node[box, fill=AMU_acc5!25] (new) at (9,0) {New query\\New key\\New value};
+    \draw[arrow] (updated) -- (maps);
+    \draw[arrow] (maps) -- (new);
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{Within one block}: current vectors $\rightarrow$ queries/keys/values $\rightarrow$ attention contribution $\rightarrow$ vector update.
+  \par\vspace{0.4em}
+  \textbf{In the next block}: the updated vectors produce new queries, keys and values. Then a new attention calculation starts.
+  \par\vspace{0.4em}
+  The token labels stay \texttt{red toy robot}. The computed vectors change; the trained matrices stay fixed during inference.
+  \note{This explicitly addresses the timing misconception. The current block's queries and keys are not recomputed from its own output before that attention calculation finishes. All Q/K/V in one attention stage derive from the same incoming representations. A later block gets the richer representations after feed-forward and normalisation and uses its own learned projection matrices. Different blocks generally have different learned parameters. Generation steps are separate: after the final block, the output layer predicts a new token, which is then appended for another model pass. The animation's final stage shows the next-block computation symbolically to avoid implying shared weights across blocks.}
+\end{frame}
