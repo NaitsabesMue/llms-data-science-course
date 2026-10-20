@@ -1,14 +1,16 @@
-"""Execute generated Python in a disposable, constrained Docker container.
+"""Docker execution and an explicitly selected local process for reviewed Python.
 
-The host never execs generated Python. Prepare the image before class; runtime
-uses --pull=never. This teaching container is not a multi-tenant sandbox service.
+Docker uses --pull=never. LocalPythonRunner uses the current Python environment;
+it provides a timeout and output limit, not container isolation.
 """
 
 import ast
 import json
+import os
 import selectors
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -26,19 +28,23 @@ class DockerPythonSandbox:
         self.timeout_s = timeout_s
         self.output_limit = output_limit
 
-    def command(self, name):
+    def command(self, name, args=()):
         return [
             'docker', 'run', '--rm', '-i', '--pull=never', '--name', name,
             '--network=none', '--read-only', '--cap-drop=ALL',
             '--security-opt=no-new-privileges', '--user=65534:65534',
             '--memory=512m', '--memory-swap=512m', '--cpus=1', '--pids-limit=32',
+            '--env=OPENBLAS_NUM_THREADS=1', '--env=OMP_NUM_THREADS=1',
+            '--env=MKL_NUM_THREADS=1',
             '--ulimit=nofile=64:64', '--ulimit=fsize=1048576:1048576',
             '--tmpfs=/tmp:rw,noexec,nosuid,size=16m,mode=1777', '--workdir=/tmp',
             '--mount', f'type=bind,src={self.csv_path},dst=/input/data.csv,readonly',
-            self.image, 'python', '-I', '-',
+            self.image, 'python', '-I', '-', *args,
         ]
 
-    def execute_python(self, code):
+    def execute_python(self, code, args=()):
+        if not isinstance(args, (tuple, list)) or any(not isinstance(arg, str) for arg in args):
+            raise TypeError('args must be a list or tuple of command-line strings')
         if not isinstance(code, str) or not 1 <= len(code.encode()) <= 20000:
             raise ValueError('code must contain 1–20000 bytes of Python')
         # This is a syntax check only. Container isolation enforces execution limits.
@@ -56,7 +62,7 @@ class DockerPythonSandbox:
         try:
             with tempfile.TemporaryFile() as source:
                 source.write(code.encode()); source.seek(0)
-                process = subprocess.Popen(self.command(name), stdin=source,
+                process = subprocess.Popen(self.command(name, args=args), stdin=source,
                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 with selectors.DefaultSelector() as selector:
                     selector.register(process.stdout, selectors.EVENT_READ)
@@ -102,6 +108,70 @@ class DockerPythonSandbox:
                 'output': output.decode(errors='replace'), 'elapsed_s': time.monotonic() - start}
 
 
+class LocalPythonRunner:
+    """Run manually inspected code in a separate process, with normal user access."""
+
+    def __init__(self, timeout_s=60, output_limit=1048576):
+        if not 0 < timeout_s <= 60 or not 1024 <= output_limit <= 1048576:
+            raise ValueError('Invalid timeout or output limit')
+        self.timeout_s = timeout_s
+        self.output_limit = output_limit
+
+    def execute_python(self, code, args=()):
+        if not isinstance(args, (tuple, list)) or any(not isinstance(arg, str) for arg in args):
+            raise TypeError('args must be a list or tuple of command-line strings')
+        if not isinstance(code, str) or not 1 <= len(code.encode()) <= 20000:
+            raise ValueError('code must contain 1–20000 bytes of Python')
+        try:
+            ast.parse(code)
+        except SyntaxError as error:
+            return {'status': 'syntax_error', 'exit_code': None, 'output': str(error)}
+        # Supply platform/runtime settings without forwarding notebook API keys.
+        environment = {key: value for key, value in os.environ.items()
+                       if key in {'PATH', 'HOME', 'USERPROFILE', 'SYSTEMROOT', 'SystemRoot',
+                                  'WINDIR', 'APPDATA', 'LOCALAPPDATA', 'TMP', 'TEMP',
+                                  'TMPDIR', 'LANG', 'LC_ALL', 'VIRTUAL_ENV'}}
+        environment.update(OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1',
+                           MKL_NUM_THREADS='1', PYTHONIOENCODING='utf-8')
+        start = time.monotonic()
+        status = 'completed'
+        # Keep font discovery cached across fresh Python processes.
+        cache = Path(__file__).resolve().parents[1] / 'local/student/.cache/matplotlib'
+        cache.mkdir(parents=True, exist_ok=True)
+        environment['MPLCONFIGDIR'] = str(cache)
+        with tempfile.TemporaryDirectory(prefix='week3-python-') as directory:
+            with tempfile.TemporaryFile() as source, tempfile.TemporaryFile() as output:
+                source.write(code.encode())
+                source.seek(0)
+                process = subprocess.Popen(
+                    [sys.executable, '-I', '-u', '-', *args], cwd=directory, env=environment,
+                    stdin=source, stdout=output, stderr=subprocess.STDOUT,
+                )
+                try:
+                    while process.poll() is None:
+                        if os.fstat(output.fileno()).st_size > self.output_limit:
+                            status = 'output_limit'
+                            break
+                        if time.monotonic() - start >= self.timeout_s:
+                            status = 'timeout'
+                            break
+                        time.sleep(0.05)
+                    if status != 'completed':
+                        process.kill()
+                    process.wait(timeout=5)
+                    if status == 'completed' and os.fstat(output.fileno()).st_size > self.output_limit:
+                        status = 'output_limit'
+                    output.seek(0)
+                    captured = output.read(self.output_limit).decode(errors='replace')
+                    exit_code = process.returncode if status == 'completed' else None
+                finally:
+                    if process.poll() is None:
+                        process.kill()
+                        process.wait(timeout=5)
+        return {'status': status, 'exit_code': exit_code, 'output': captured,
+                'elapsed_s': time.monotonic() - start}
+
+
 def check_analysis_execution(execution, expected):
     """Check the computation outside the sandbox; no model-generated tests run here."""
     if execution.get('status') != 'completed' or execution.get('exit_code') != 0:
@@ -115,31 +185,38 @@ def check_analysis_execution(execution, expected):
     return {'passed': True, 'issues': [], 'result': result}
 
 
-def eda_program(code):
-    """Wrap the original analyze(df) exercise for execution inside the container."""
+def eda_program(code, loader_code=None, include_plots=True, csv_path='/input/data.csv'):
+    """Wrap the two functions for either process, retaining the same input checks."""
     if not isinstance(code, str):
         raise TypeError('Expected Python source')
+    if loader_code is None:
+        loader_code = "def load_data(path):\n    return pd.read_csv(path)\n"
+    if not isinstance(loader_code, str):
+        raise TypeError('Expected Python loader source')
     prefix = '''import os, io, json, base64, contextlib
 os.environ['MPLBACKEND'] = 'Agg'
-os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
-import numpy as np
+os.environ.setdefault('MPLCONFIGDIR', '/tmp/matplotlib')
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from scipy import stats
 '''
-    suffix = '''
+    if include_plots:
+        prefix += 'import matplotlib.pyplot as plt\n'
+    suffix = '\ndf = load_data(' + repr(str(csv_path)) + ')\n' + '''loaded_csv = df.to_csv(index=False)
 report = io.StringIO()
 with contextlib.redirect_stdout(report):
-    analyze(pd.read_csv('/input/data.csv'))
+    analyze(df)
 plots = []
-for number in plt.get_fignums():
+'''
+    if include_plots:
+        suffix += '''for number in plt.get_fignums():
     image = io.BytesIO()
     plt.figure(number).savefig(image, format='png', dpi=90, bbox_inches='tight')
     plots.append(base64.b64encode(image.getvalue()).decode('ascii'))
-print(json.dumps({'report': report.getvalue(), 'plots': plots}))
 '''
-    return prefix + '\n' + code + '\n' + suffix
+    suffix += '''
+print(json.dumps({'report': report.getvalue(), 'plots': plots,
+                  'loaded_csv': loaded_csv, 'after_csv': df.to_csv(index=False)}))
+'''
+    return prefix + '\n' + loader_code + '\n' + code + '\n' + suffix
 
 
 def save_eda_output(output, folder):

@@ -1,185 +1,593 @@
 \documentclass[aspectratio=169]{beamer}
 \usepackage{beamerthemeAMU}
-\usepackage{amsmath}
-\usepackage{listings}
-\usepackage{booktabs}
+\usepackage{amsmath,booktabs,array,listings,hyperref,tikz}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-
-\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
-
+\usetikzlibrary{arrows.meta,positioning}
+\lstset{basicstyle=\ttfamily\footnotesize,keywordstyle=\color{AMU_dk2}\bfseries,
+  commentstyle=\itshape\color{gray},showstringspaces=false,
+  columns=flexible,keepspaces=true,breaklines=true}
+\tikzset{taskbox/.style={draw=AMU_dk2,rounded corners=3pt,align=center,
+  minimum height=1cm,text width=3.2cm,inner sep=5pt,font=\small},
+  taskarrow/.style={-{Stealth},thick,draw=AMU_acc1}}
 \title{Large Language Models in Data Science}
-\subtitle{Week 3: Prompting for Effective LLM Use}
+\subtitle{Week 3: From a Task to a Verified Analysis}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
 \date{2026--2027}
-
 \begin{document}
+\begin{frame}[plain]\titlepage\end{frame}
 
-\begin{frame}[plain]
-  \titlepage
+\begin{frame}{From Using a Model to Checking Its Work}
+  \textbf{Week 2}: load a trained model, interpret its outputs and measure its performance.
+  \par\vspace{0.6em}
+  \textbf{Today}: ask a hosted model to write Python for an analysis, run that code on our data, and check the result.
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.3cm]
+    \node[taskbox,text width=2.55cm,fill=AMU_lt2!55] (task) {Describe the task\\and the data};
+    \node[taskbox,text width=2.55cm,fill=AMU_acc5!30,right=of task] (model) {Model writes\\Python code};
+    \node[taskbox,text width=2.55cm,fill=AMU_dk2!10,right=of model] (run) {Run that code\\on our dataset};
+    \node[taskbox,text width=2.55cm,fill=AMU_lt2!55,right=of run] (check) {Check the\\numbers and plots};
+    \draw[taskarrow] (task) -- (model);
+    \draw[taskarrow] (model) -- (run);
+    \draw[taskarrow] (run) -- (check);
+  \end{tikzpicture}
+  \end{center}
+  \small The model returns code as text. Python performs the calculation on the actual data; we check that it answers the question correctly.
 \end{frame}
 
-\begin{frame}{Session Overview}
+\section{Specify the Task and Supply Context}
+
+\begin{frame}{Start with a Question We Can Check}
+  \begin{block}{The assignment}
+    Customers are leaving. Does observed churn differ by contract type?
+  \end{block}
+  \textbf{Churn} means that a customer leaves. In our data, \texttt{churn=1} means the customer left; \texttt{churn=0} means they did not.
+  \par\vspace{0.5em}
+  For each contract type, we want:
+  \begin{itemize}
+    \item the number of customers and the number who left;
+    \item the fraction who left: the number who left divided by the total number of customers with that contract type.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{A Small Dataset We Can Check by Hand}
   \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.55\linewidth}
-      \textbf{Lecture (1.5h)}
-      \begin{enumerate}
-        \item Clear rules for prompting
-        \item Roles: system vs. user (with example)
-        \item Separate data from instructions
-        \item Format-controlled outputs (JSON/code)
-        \item Two-step prompting (prompt-writer)
-        \item Coding, research, ideation patterns
-        \item Risks, guardrails, references
-      \end{enumerate}
+    \begin{column}{0.49\linewidth}
+      \small \texttt{csv\_text} is a Python string containing comma-separated values (CSV): six customers, one row each.
+\begin{lstlisting}[language=Python,commentstyle=\ttfamily\color{AMU_dk1}]
+csv_text = """contract_type,churn
+month-to-month,1
+month-to-month,0
+month-to-month,1
+one-year,0
+one-year,1
+two-year,0
+"""
+\end{lstlisting}
     \end{column}
-    \begin{column}{0.4\linewidth}
-      \textbf{Lab (1.5h)}
+    \begin{column}{0.46\linewidth}
+      \small \textbf{Context we must supply}
       \begin{itemize}
-        \item Current Gemini SDK in notebooks
-        \item Role prompting: see outcome change
-        \item Structured prompts and JSON parsing
-        \item Generate and run small EDA code
-        \item Optional: search+summarize scaffold
+        \item What a row represents.
+        \item What the columns and values mean.
+        \item Which rows belong in each calculation.
       \end{itemize}
+      \textbf{Check now}: among the three month-to-month customers, how many left?
+    \end{column}
+  \end{columns}
+  \par\vspace{0.3em}
+  \small Later, Python will analyse the lab's 600-row synthetic dataset. We use these six rows first to make errors visible.
+\end{frame}
+
+\begin{frame}[fragile]{Turn the Question into an Explicit Request}
+  \small \texttt{task\_text} is a Python string describing the user's task. This variable name is our choice; it is not an API field.
+\begin{lstlisting}[language=Python,commentstyle=\ttfamily\color{AMU_dk1}]
+task_text = """Compare churn by contract type.
+Each row is one customer; churn: 0 = stayed, 1 = left.
+For each type, report n_customers (group size)
+and n_churn (customers who left).
+churn_rate = n_churn / n_customers, from 0 to 1.
+Return a table. Report observed differences only."""
+\end{lstlisting}
+  \small This specifies the \textbf{task}, relevant \textbf{context}, required \textbf{output} and a limit on the \textbf{conclusion}.
+  \par\vspace{0.4em}
+  Start with what the task needs. Add instructions or examples to address failures you actually observe.
+  \note{A fixed role/task/format template is not a guarantee of quality. Examples can clarify a convention, as the JSON example below does for fractions versus percentages. An extra prompt-writing call is not mandatory. References: https://ai.google.dev/gemini-api/docs/prompting-strategies and https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents.}
+\end{frame}
+
+\begin{frame}{Why Separate System Instructions from the User Message?}
+  \small Imagine an analysis application used for different datasets and questions. We separate the application's guidance from the user's particular task.
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.47\linewidth}
+      \textbf{System instruction}
+      \begin{block}{Set by the application}
+        \small Use supplied evidence. State missing information. Distinguish observation from causation.
+      \end{block}
+    \end{column}
+    \begin{column}{0.47\linewidth}
+      \textbf{User message}
+      \begin{block}{The task and its data}
+        \small Compare churn by contract type using the six CSV rows and the definitions we just supplied.
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \small The application can reuse the guidance while the user's task and data change.
+  \par\vspace{0.4em}
+  \textbf{In our example, both parts are sent together on every call.} The system instruction is optional; one user message is enough for a simple request.
+  \note{This is a distinction between who supplies instructions, not between permanent and temporary memory. Reuse is an application design choice: a system instruction can also change between calls. Our standalone generate_content calls do not retain earlier instructions automatically. The API fields identify the parts; typing System: in plain text does not create a system instruction. The cat persona remains a short lab demonstration of style rather than evidence of correctness. System instructions alone do not enforce permissions.}
+\end{frame}
+
+\begin{frame}[fragile]{Connect Python to a Hosted Model}
+  \small An \textbf{API} is an interface through which our Python program sends a request to a service and receives a response.
+\begin{lstlisting}[language=Python]
+import os
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+
+load_dotenv()  # Load local settings from .env.
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+model_name = "gemini-3.5-flash-lite"  # Common model for this course.
+\end{lstlisting}
+  \begin{itemize}
+    \item \texttt{client} is the object we use to contact the service.
+    \item \texttt{model\_name} fixes one common model for the course.
+    \item The model runs at the provider; we do not download its weights here.
+  \end{itemize}
+  \note{Install google-genai and python-dotenv as in the lab. Keep keys local and never print them. Calls use account quota and may incur charges. Retain the notebook's generate_content interface rather than changing APIs during the lecture. Source: https://github.com/googleapis/python-genai.}
+\end{frame}
+
+\begin{frame}[fragile]{Build the User Message}
+\begin{lstlisting}[language=Python,commentstyle=\ttfamily\color{AMU_dk1}]
+task_text = """Compare churn by contract type.
+Each row is one customer; churn: 0 = stayed, 1 = left.
+For each type, report n_customers (group size)
+and n_churn (customers who left).
+churn_rate = n_churn / n_customers, from 0 to 1.
+Return a table. Report observed differences only."""
+
+csv_text = """contract_type,churn
+month-to-month,1
+month-to-month,0
+month-to-month,1
+one-year,0
+one-year,1
+two-year,0
+"""
+prompt = task_text + "\n\nData (CSV):\n" + csv_text
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Send the Message and Read the Table Reply}
+\begin{lstlisting}[language=Python]
+config = types.GenerateContentConfig(
+    system_instruction=(
+        "Use supplied evidence. State missing information. "
+        "Distinguish observation from causation."))
+response = client.models.generate_content(
+    model=model_name, contents=prompt, config=config,
+)
+print(response.text)
+\end{lstlisting}
+  \small This call sends the system instruction through \texttt{config}, and the user message (task plus six CSV rows) through \texttt{contents=prompt}.
+  \par\vspace{0.5em}
+  \texttt{response.text} contains the model's table reply as a Python string. \texttt{print(response.text)} displays that reply.
+\end{frame}
+
+\section{Read and Validate the Output}
+
+\begin{frame}[fragile]{What Does the Table Reply Look Like?}
+\begin{lstlisting}[language=Python]
+print(type(response.text))
+print(response.text)
+\end{lstlisting}
+  \small A possible output, illustrated with our six rows:
+\begin{lstlisting}[language={},columns=fixed]
+<class 'str'>
+| contract_type  | n_customers | n_churn | churn_rate |
+|----------------|-------------|---------|------------|
+| month-to-month | 3           | 2       | 0.6667     |
+| one-year       | 2           | 1       | 0.5        |
+| two-year       | 1           | 0       | 0.0        |
+\end{lstlisting}
+  \small \texttt{str} means a Python string. The table is written using characters inside that string; the bars separate its columns.
+  \par\vspace{0.5em}
+  We can read the displayed table, but Python needs to extract its values before using them in calculations. Next, we request a format designed for that step.
+  \note{This is an illustrative response, not an observed live model output. Actual wording and formatting vary. The table uses Markdown notation; a chat application may render that notation as a formatted table, while print displays the text. Python can parse several tabular text formats; JSON is the next example here, not the only possible choice. No pandas DataFrame is created automatically by this model call.}
+\end{frame}
+
+\begin{frame}[fragile]{Choose an Output Your Program Can Read}
+  \small For the next call, ask for the same results as \textbf{JSON text}. JSON is a text format for objects with named fields, lists and values.
+\begin{lstlisting}[language={}]
+[
+  {"contract_type": "month-to-month",
+   "n_customers": 3, "n_churn": 2,
+   "churn_rate": 0.6667}
+]
+\end{lstlisting}
+  \small Illustrative output for \textbf{one group}; the complete answer needs all three groups.
+  \begin{itemize}
+    \item Outer brackets hold a list; braces hold an object.
+    \item \texttt{contract\_type} is a string; counts and rates are numbers.
+    \item An example clarifies the convention: \texttt{0.6667} is a fraction, not \texttt{66.67} percent.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Parsing Is Only the First Check}
+\begin{lstlisting}[language=Python]
+import json
+json_prompt = prompt.replace("Return a table.", "Return a JSON list.")
+json_response = client.models.generate_content(
+    model=model_name, contents=json_prompt, config=config,
+)
+rows = json.loads(json_response.text)
+\end{lstlisting}
+  \small We expect a Python list of dictionaries, one per contract type.
+  \par\vspace{0.3em}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{@{}p{2.2cm}p{4.7cm}p{5.2cm}@{}}
+    \toprule
+    \textbf{Check} & \textbf{Question} & \textbf{How we check} \\
+    \midrule
+    Syntax & Can Python read the JSON? & \texttt{json.loads()} \\
+    Structure & Correct fields and types? & Validate against a schema. \\
+    Content & Correct counts and rates? & Recompute from the data. \\
+    \bottomrule
+  \end{tabular}
+  \par\vspace{0.4em}
+  \small A \textbf{schema} defines required fields, their types and limits.
+  \note{json.loads can return several Python types, so check the outer structure too. JSONDecodeError, missing fields and wrong numbers are separate failures. Do not silently exclude failed calls from evaluation. Source: https://docs.python.org/3/library/json.html.}
+\end{frame}
+
+\begin{frame}[fragile]{Structured Output: First Define the Required JSON}
+  \small \textbf{Structured output is an API feature.} We supply a \textbf{JSON Schema}: a specification of the response's structure, fields and types.
+\begin{lstlisting}[language=Python]
+row_schema = {
+    "type": "object",
+    "properties": {
+        "contract_type": {"type": "string"},
+        "n_customers": {"type": "integer", "minimum": 1},
+        "n_churn": {"type": "integer", "minimum": 0},
+        "churn_rate": {"type": "number", "minimum": 0, "maximum": 1},
+    },
+    "required": ["contract_type", "n_customers", "n_churn", "churn_rate"],
+}
+result_schema = {"type": "array", "items": row_schema}
+\end{lstlisting}
+  \small \texttt{properties} defines the fields; \texttt{required} lists mandatory fields. \texttt{array} means a list, whose items must follow \texttt{row\_schema}.
+  \note{The schema is a Python dictionary written using standard JSON Schema keywords. Its object type describes one group; the outer array describes all groups. The bounds constrain counts and rates, but do not establish that a count matches the input or that every group is returned. Sources: https://ai.google.dev/gemini-api/docs/structured-output and https://github.com/googleapis/python-genai.}
+\end{frame}
+
+\begin{frame}[fragile]{Enable Structured Output in the API Call}
+\begin{lstlisting}[language=Python]
+json_config = types.GenerateContentConfig(
+    system_instruction=config.system_instruction,
+    response_mime_type="application/json",
+    response_json_schema=result_schema,
+)
+json_response = client.models.generate_content(
+    model=model_name, contents=json_prompt, config=json_config,
+)
+rows = json.loads(json_response.text)
+\end{lstlisting}
+  \begin{itemize}
+    \item \texttt{response\_mime\_type} selects JSON as the response format.
+    \item \texttt{response\_json\_schema} supplies the required structure and types.
+  \end{itemize}
+  \small The reply is still JSON text. \texttt{json.loads()} converts it to Python objects.
+  \par\vspace{0.4em}
+  \texttt{0.99} would pass the range check (0 to 1), however, the correct rate is $2/3 \approx 0.667$.
+\end{frame}
+
+\section{Generate, Execute and Check Python}
+
+\begin{frame}{From a CSV to an Analysis Workflow}
+  \small Until now, the model returned a table and then a json file.  Now we ask it to write the Python code that loads the data and calculates the statistics.
+  \par\vspace{0.5em}
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.3cm]
+    \node[taskbox,text width=1.5cm,fill=AMU_lt2!55] (csv) {CSV file\\\texttt{data.csv}};
+    \node[taskbox,text width=2.2cm,fill=AMU_acc5!30,right=of csv] (load) {Run the\\loading code};
+    \node[taskbox,text width=1.8cm,fill=AMU_lt2!55,right=of load] (df) {DataFrame\\\texttt{df}};
+    \node[taskbox,text width=2.2cm,fill=AMU_acc5!30,right=of df] (analysis) {Run the\\analysis code};
+    \node[taskbox,text width=1.5cm,fill=AMU_lt2!55,right=of analysis] (result) {Table\\and plot};
+    \draw[taskarrow] (csv) -- (load);
+    \draw[taskarrow] (load) -- (df);
+    \draw[taskarrow] (df) -- (analysis);
+    \draw[taskarrow] (analysis) -- (result);
+  \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Step 1: Ask for Code That Loads the CSV}
+\begin{lstlisting}[language=Python,commentstyle=\ttfamily\color{AMU_dk1}]
+load_prompt = """Write Python defining load_data(path).
+Read the CSV file at path with pandas and return a DataFrame.
+Keep every row and both columns, with the original names.
+Return only Python code, with imports and no Markdown.
+The file contains:
+""" + csv_text
+
+load_response = client.models.generate_content(
+    model=model_name, contents=load_prompt, config=config,
+)
+loader_code = load_response.text
+print(loader_code)
+\end{lstlisting}
+  \small \texttt{path} will be the file's location when the function runs. The model receives the CSV text in the message; it does not open our local file.
+  \par\vspace{0.4em}
+  \texttt{loader\_code} contains Python code as a string. We inspect and execute it next.
+\end{frame}
+
+\begin{frame}{Docker: Package and Run Applications Independently}
+  \small \textbf{Docker} packages an application and the software it needs into an \textbf{image}: for example, Python, libraries and system tools. A \textbf{container} runs that image with its own files and processes.
+  \begin{center}
+  \begin{tikzpicture}
+    \node[taskbox,text width=4.3cm,fill=AMU_acc5!30] (analysis) at (-2.6,0) {Analysis container\\Python + pandas\\System tools};
+    \node[taskbox,text width=4.3cm,fill=AMU_dk2!10] (dashboard) at (2.6,0) {Dashboard container\\Python + web libraries\\System tools};
+    \node[draw=AMU_dk2,rounded corners=3pt,fill=AMU_lt2!55,
+      text width=9.8cm,align=center,inner sep=5pt,font=\small]
+      (kernel) at (0,-1.2) {Shared Linux kernel (the core of the operating system)};
+    \draw[thick,draw=AMU_acc1] (analysis.south) -- (analysis.south |- kernel.north);
+    \draw[thick,draw=AMU_acc1] (dashboard.south) -- (dashboard.south |- kernel.north);
+  \end{tikzpicture}
+  \end{center}
+  \begin{itemize}
+    \item \textbf{Modularity}: run and update each application separately.
+    \item \textbf{Reproducibility}: reuse the same image to keep the software environment consistent across runs and computers.
+  \end{itemize}
+  \par\vspace{0.3em}
+  \small A \texttt{venv} separates Python packages. Docker also packages system tools and provides separate files and processes for each application.
+  \note{This slide explains Docker's general purpose before applying it to generated code. The two containers illustrate separate application environments; the current lab starts only an analysis container. Containers share a kernel rather than each booting an entire operating system. On macOS and Windows, Docker Desktop supplies a Linux virtual machine whose kernel is shared by these Linux containers. Reusing an image controls the software environment, not randomness, hardware differences or every source of variation in results. Sources: https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/, https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/ and https://docs.python.org/3/library/venv.html.}
+\end{frame}
+
+\begin{frame}{Generated Code: Restrict What It Can Access}
+  \small The model returns code we have not yet verified. Running it in our notebook would give it the notebook's access to files and the network.
+  \par\vspace{0.4em}
+  We use a \textbf{sandbox}: an execution environment with restricted access and resources. Our helper configures a Docker container for this purpose:
+  \begin{itemize}
+    \item expose the selected CSV read-only; keep other personal files and API keys outside;
+    \item disable network access during execution;
+    \item limit execution time and memory.
+  \end{itemize}
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.5cm]
+    \node[taskbox,fill=AMU_acc5!30] (notebook) {Notebook\\Inspected code};
+    \node[taskbox,fill=AMU_dk2!10,right=of notebook] (container) {Docker container\\Run Python};
+    \node[taskbox,fill=AMU_lt2!55,right=of container] (result) {Notebook\\Text, plots, errors};
+    \draw[taskarrow] (notebook) -- (container);
+    \draw[taskarrow] (container) -- (result);
+  \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Run the Loading Code and Inspect the DataFrame}
+  \small Inspect the generated function, then execute it in the Docker container. For example:
+  \par\vspace{0.5em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.49\linewidth}
+      \textbf{Code executed in the container}
+\begin{lstlisting}[language=Python]
+import pandas as pd
+
+def load_data(path):
+    return pd.read_csv(path)
+
+df = load_data("/input/data.csv")
+print(df)
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.46\linewidth}
+      \textbf{Printed DataFrame}
+\begin{lstlisting}[language={},columns=fullflexible]
+    contract_type  churn
+0  month-to-month      1
+1  month-to-month      0
+2  month-to-month      1
+3        one-year      0
+4        one-year      1
+5        two-year      0
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+  \par\vspace{0.6em}
+  \small Check: six rows, two correctly named columns, and unchanged values.
+  \par\vspace{0.4em}
+  The numbers 0 to 5 are row indices, not an extra column in the CSV.
+  \note{The function and resulting table are illustrative, not an observed API response. The container exposes the local data.csv at /input/data.csv. Both the loading and analysis functions run there; the model calls remain outside it.}
+\end{frame}
+
+\begin{frame}[fragile]{Step 2: Ask for Code That Analyses the DataFrame}
+\begin{lstlisting}[language=Python,commentstyle=\ttfamily\color{AMU_dk1}]
+analysis_prompt = """Write Python defining analyze(df).
+Each row is one customer; churn: 0 = stayed, 1 = left.
+For each contract_type, print n_customers (group size),
+n_churn (number who left), and churn_rate = n_churn / n_customers.
+Make a labelled bar chart of those rates, from 0 to 1.
+Use pandas and matplotlib, with any necessary imports.
+Do not modify df or call plt.show() or plt.close().
+Return only Python code, no Markdown.
+The CSV loaded into df is:
+""" + csv_text
+analysis_response = client.models.generate_content(
+    model=model_name, contents=analysis_prompt, config=config,
+)
+analysis_code = analysis_response.text
+print(analysis_code)
+\end{lstlisting}
+  \small Inspect this code, then call \texttt{analyze(df)} with the DataFrame we just loaded.
+  \note{This independent API call has no automatic memory of the loading call. It receives the CSV explicitly. In the execution environment, both function definitions must be present before calling df = load_data('/input/data.csv') and then analyze(df). The runner captures figures, so the generated function should not show or close them.}
+\end{frame}
+
+\begin{frame}[fragile]{Code for the Six-Row Example}
+  \small This function calculates the group counts and rates, prints the table, and creates a bar chart:
+  \lstinputlisting[language=Python,firstline=3]{examples/week3_churn/initial.py}
+  \footnotesize Reviewed example, not a captured API reply. The following results come from executing this code.
+  \note{This is a reviewed teaching example, not a captured Gemini response. Both code versions and the six CSV rows are stored in slides/examples/week3_churn/. render.py executes the examples and saves their actual stdout and figures. The slide reads the same Python file used to create the output, rather than a separately transcribed snippet. The live notebook offers Docker execution or a separate local Python process after manual inspection. Both modes check the results; local mode has the notebook's file permissions and is not a sandbox.}
+\end{frame}
+
+\begin{frame}[fragile]{Run the Code: Table, Plot and a Check}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.53\linewidth}
+      \small \textbf{Printed output}
+      \lstinputlisting[language={},columns=fullflexible,basicstyle=\ttfamily\scriptsize,breaklines=false]{figures/week3_churn_result.txt}
+      \small Check directly against the six CSV rows:
+      \begin{itemize}
+        \item Counts: $3 + 2 + 1 = 6$.
+        \item Rates: $2/3$, $1/2$ and $0/1$.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.45\linewidth}
+      \includegraphics[width=\linewidth]{figures/week3_churn_initial.png}
+    \end{column}
+  \end{columns}
+  \par\vspace{0.6em}
+  \small \textbf{The counts and rates are correct for these six rows.} If a check failed, we would send the previous code and the failed check back to the model, then execute and check the revision.
+  \note{The printed output and plot come from executing initial.py. render.py independently counts the raw CSV rows using the Python csv module, checks the printed counts and rounded rates, and checks the bar heights against the unrounded rates. The input DataFrame is also checked for unintended changes. These checks establish the displayed result for this input, not correctness on all datasets. The tiny example illustrates observed rates only; it does not establish a general population difference or causation.}
+\end{frame}
+
+\begin{frame}[fragile]{Ask for a More Readable Plot}
+  \small The numbers are correct. Label the bars so the zero rate is explicit:
+\begin{lstlisting}[language=Python,commentstyle=\ttfamily\color{AMU_dk1}]
+feedback = """Keep the table calculations unchanged.
+Use horizontal bars in teal.
+Show percentages on the axis and label every bar, including zero.
+Keep the scale from 0% to 100%.
+Return the complete revised analyze(df) function, with imports."""
+revision_prompt = (
+    analysis_prompt + "\n\nPrevious code:\n" + analysis_code
+    + "\n\nRequested changes:\n" + feedback
+)
+revised_response = client.models.generate_content(
+    model=model_name, contents=revision_prompt, config=config,
+)
+revised_code = revised_response.text
+print(revised_code)
+\end{lstlisting}
+  \small Run the revised code and check the counts and rates again.
+  \note{This shows how to request a revision in a new API call: send the original task and data, the previous code and specific feedback. This call was not used to generate the fixed teaching example: the next slide uses reviewed revised.py so the lecture has reproducible outputs. The live model may produce a different revision. The first plot makes a zero rate implicit; the requested labels make it explicit.}
+\end{frame}
+
+\begin{frame}{Revised Plot: Same Numbers, Clearer Labels}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.49\linewidth}
+      \small \textbf{First version}
+      \par\vspace{0.4em}
+      \includegraphics[width=\linewidth]{figures/week3_churn_initial.png}
+    \end{column}
+    \begin{column}{0.49\linewidth}
+      \small \textbf{Revised version}
+      \par\vspace{0.4em}
+      \includegraphics[width=\linewidth]{figures/week3_churn_revised.png}
+    \end{column}
+  \end{columns}
+  \par\vspace{0.6em}
+  \small \textbf{Checked after revision}: the printed counts and rates are unchanged. The bars now run horizontally, and percentages label every group, including $0\%$.
+\end{frame}
+
+\begin{frame}{Ask an LLM to Review the Plot}
+  \small We just inspected the plot ourselves and requested a change. We can automate this review with another LLM call.
+  \par\vspace{0.4em}
+  Send the task, previous code, printed table and actual PNG image to a model that accepts images:
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.5cm]
+    \node[taskbox,fill=AMU_lt2!55] (input) {Task + code\\Table + plot image};
+    \node[taskbox,fill=AMU_acc5!30,right=of input] (review) {Another LLM call\\Review the output};
+    \node[taskbox,fill=AMU_dk2!10,right=of review] (feedback) {Accept the plot\\or request changes};
+    \draw[taskarrow] (input) -- (review);
+    \draw[taskarrow] (review) -- (feedback);
+  \end{tikzpicture}
+  \end{center}
+  \begin{block}{The review request}
+    \small Compare the plot with the table. Are the axes and units clear? Is every group labelled, including zero values? Return specific changes if needed; otherwise accept the plot.
+  \end{block}
+  \small Python checks the numbers independently. The LLM reviews readability and consistency with the table; its feedback can trigger a new code-generation call.
+  \note{This is another API request, not a new trained model: the same model may handle both code generation and review if it accepts images. The API content must contain the actual PNG as an image part alongside the task, table and criteria. With the existing Google SDK this can use types.Part.from_bytes(data=plot_bytes, mime_type='image/png') inside contents. A plot filename alone does not supply the image. For an automated decision, validate an accept/revise response using the structured-output approach introduced earlier. This review call is a proposed extension, not a captured API response. Independent arithmetic checks remain separate from model judgement. Source: https://github.com/googleapis/python-genai and https://ai.google.dev/gemini-api/docs/image-understanding.}
+\end{frame}
+
+\begin{frame}{From Our Review to an Agent Loop}
+  \small In an \textbf{agent loop}, the model uses returned results to choose its next action: revise the code, run again or accept the result.
+  \par\vspace{0.4em}
+  We implement this loop in Week 5: the program runs the code and returns results.
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.55cm]
+    \node[taskbox,fill=AMU_acc5!30] (model) {LLM review\\Choose next step};
+    \node[taskbox,fill=AMU_dk2!10,right=of model] (run) {Run Python\\Check numbers};
+    \node[taskbox,fill=AMU_lt2!55,right=of run] (output) {Table + plot\\+ check results};
+    \draw[taskarrow] (model) -- node[above,font=\footnotesize] {Run} (run);
+    \draw[taskarrow] (run) -- (output);
+    \draw[taskarrow] (output.north) -- ++(0,0.45) -| (model.north);
+    \draw[taskarrow] (model.south) -- ++(0,-0.45)
+      node[below,font=\footnotesize] {Accept this run};
+  \end{tikzpicture}
+  \end{center}
+  \small \textbf{After the six-row check passes}: run the same code on the full dataset and check that output too.
+  \par\vspace{0.4em}
+  \textbf{Finish} when the full analysis passes the numerical checks and meets the presentation requirements. Limit revisions, for example to three attempts; unresolved issues go to human review.
+  \note{The extra review call is one step; agency comes from allowing a model to choose subsequent actions using results, rather than treating a second call alone as an agent. A fixed evaluator-optimizer sequence can also be implemented as a workflow. The agent extension permits model decisions to revise code, rerun it or finish, while our program enforces execution permissions, independent checks and limits. The current example demonstrates the manual cycle; Week 5 implements control of actions and traces. Finishing on the toy case is not completion of the full-data task. Reference: https://www.anthropic.com/engineering/building-effective-agents.}
+\end{frame}
+
+\begin{frame}[fragile]{Finally, Run the Checked Code on All 600 Rows}
+  \small \texttt{df\_full} contains the full synthetic customer dataset. Run the same \texttt{analyze(df\_full)} function and check its output:
+  \par\vspace{0.3em}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.53\linewidth}
+      \small \textbf{Printed output on the full dataset}
+      \lstinputlisting[language={},columns=fullflexible,basicstyle=\ttfamily\scriptsize,breaklines=false]{figures/week3_churn_full_result.txt}
+      \small Check: $333 + 136 + 131 = 600$ customers. Each rate matches an independent count from the full CSV.
+    \end{column}
+    \begin{column}{0.45\linewidth}
+      \includegraphics[width=\linewidth]{figures/week3_churn_full.png}
     \end{column}
   \end{columns}
 \end{frame}
 
-\section{Why Prompting Matters}
-
-\begin{frame}{Prompting Makes a Big Difference}
-  \begin{itemize}
-    \item Compare prompts on the same examples; measure whether the change helps.
-    \item A clear goal and acceptance criteria lead to better outputs.
-    \item Save prompts and parseable outputs to reproduce analyses.
-  \end{itemize}
+\begin{frame}{Send the Data, or Generate Code to Process Them?}
+  \small \textbf{Same question}: customer counts, churn counts and churn rates for each contract type.
+  \par\vspace{0.6em}
+  \renewcommand{\arraystretch}{1.35}
+  \begin{tabular}{@{}p{2.5cm}p{4.7cm}p{5.1cm}@{}}
+    \toprule
+     & \textbf{Full CSV in the prompt} & \textbf{Generate Python, run locally} \\
+    \midrule
+    Send to the LLM & Task + all 600 rows & Task + column definitions + 6 example rows \\
+    Receive & A table of results & Code that calculates the table \\
+    Next CSV & Send the new data again & Reuse the checked code if the task and columns are unchanged \\
+    \bottomrule
+  \end{tabular}
+  \par\vspace{0.6em}
+  \small \textbf{Lab comparison}: use the same model, check both results, and measure input tokens, output tokens and API cost. Code generation also produces output tokens; count review and revision calls too.
 \end{frame}
 
-
-\section{Prompting}
-
-\begin{frame}{Clear Rules for Prompting}
+\begin{frame}{Further Reading: Instructions, Outputs and Feedback}
   \begin{itemize}
-    \item \textbf{Be specific}: Ask exactly for what you need; set scope and length.
-    \item \textbf{State role}: Use a system instruction to set role and guardrails.
-    \item \textbf{Separate parts}: Keep instructions, data, and output format distinct.
-    \item \textbf{Format outputs}: Require JSON or fenced code for parsing.
-    \item \textbf{Acceptance criteria}: Provide a checklist; ask the model to self-verify.
-    \item \textbf{Few-shot (minimal)}: Use a short example when the required format is ambiguous.
+    \item \href{https://ai.google.dev/gemini-api/docs/prompting-strategies}{Google: prompt design strategies}\\Clear instructions, relevant context and examples.
+    \item \href{https://ai.google.dev/gemini-api/docs/structured-output}{Google: structured outputs}\\Schemas for program-readable results; content still needs checking.
+    \item \href{https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents}{Anthropic: effective context engineering for AI agents}\\Choose what each call needs, including tool results and history.
+    \item \href{https://www.anthropic.com/engineering/building-effective-agents}{Anthropic: building effective agents}\\Fixed workflows and agents that choose actions using feedback.
   \end{itemize}
+  \small API examples follow the \href{https://github.com/googleapis/python-genai}{Google Gen AI Python SDK}. Sources checked 19 October 2026.
 \end{frame}
 
-\begin{frame}[fragile]{Reusable Prompt Template}
+\begin{frame}[fragile]{Before the Lab: Get Your Gemini API Key}
+  \begin{enumerate}
+    \item Open \href{https://aistudio.google.com/api-keys}{\texttt{aistudio.google.com/api-keys}} and sign in with a Google account.
+    \item Copy an existing key, or click \textbf{Create API key} and select or create a project. Accept the terms if prompted.
+    \item Save the key in \texttt{.env}, next to the repository's \texttt{README.md}.
+  \end{enumerate}
 \begin{lstlisting}[language={}]
-System: You are a senior data scientist.
-Prefer minimal, correct code. Follow the output format exactly.
-
-User:
-- Task: <what to do, be concrete>
-- Context: <one paragraph; optional>
-- Constraints: <libraries, time, memory, safety>
-- Output format: <strict JSON schema or sections>
-- Self-check: Confirm acceptance criteria before finalizing.
+GEMINI_API_KEY=paste_your_key_here
 \end{lstlisting}
-\end{frame}
-
-\section{Roles}
-
-\begin{frame}{Roles: System vs. User}
-  \begin{itemize}
-    \item \textbf{System instruction}: Persistent role and guardrails (e.g., "You are a cat.").
-    \item \textbf{User prompt}: The immediate task/question.
-    \item Changing the system instruction can change style, persona, and assumptions.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]{Role Prompting: Minimal Example}
-\begin{lstlisting}[language=Python]
-import os
-from google import genai
-from google.genai import types
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-model = os.environ["GEMINI_MODEL"]
-PROMPT = "In one sentence, what do you think about mice?"
-
-print(client.models.generate_content(
-    model=model, contents=PROMPT).text)
-print(client.models.generate_content(
-    model=model, contents=PROMPT,
-    config=types.GenerateContentConfig(
-        system_instruction="You are a cat.")).text)
-\end{lstlisting}
-\end{frame}
-
-\section{Structure}
-
-\begin{frame}{Separate Data from Instructions}
-  \begin{itemize}
-    \item Keep instructions stable; swap data without changing behavior.
-    \item Use delimiters or fields: \texttt{Instructions: ...} \quad \texttt{Data: <...>}
-    \item Benefits: auditability, reproducibility, safer copy/paste.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]{Formatting Outputs for Parsing}
-\begin{lstlisting}[language={}]
-System: Return strict JSON with keys {"summary": str, "tags": [str]}.
-User:
-- Instructions: Summarize the text and produce 3 topical tags.
-- Data: <article text here>
-\end{lstlisting}
-\vspace{0.4em}
-\textit{Tip:} Validate with \texttt{json.loads} and ask the model to fix on failure.
-\end{frame}
-
-\section{Patterns}
-
-\begin{frame}{Two-Step Prompting (Prompt-Writer)}
-  \begin{itemize}
-    \item Step 1: Ask the LLM to draft/refine the prompt for your task.
-    \item Step 2: Use the drafted prompt (after personal refining) to run the task (same or different model).
-    \item Useful for clarifying objectives and output format before execution.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Code, Research, Ideation: Quick Patterns}
-  \begin{itemize}
-    \item \textbf{Code}: generate \(\rightarrow\) run \(\rightarrow\) feed results back; ask for tests.
-    \item \textbf{Research}: generate queries \(\rightarrow\) gather snippets \(\rightarrow\) synthesize after verification and add citations.
-    \item \textbf{Ideation}: require 3 distinct strategies with trade-offs and a next step.
-  \end{itemize}
-\end{frame}
-
-
-\section{Risks}
-
-\begin{frame}{Risks and Guardrails}
-  \begin{itemize}
-    \item \textbf{Correctness}: Prefer code+execution; verify with tests.
-    \item \textbf{Safety}: Sandbox code; avoid secrets; pin deps.
-    \item \textbf{Reproducibility}: Save prompts, model names, seeds, outputs.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{References}
-  \begin{itemize}
-    \item Anthropic: Prompt Engineering Interactive Tutorial (thinking step-by-step)
-    \item Anthropic: prompt-eng-interactive-tutorial/06\_Precognition\_Thinking\_Step\_by\_Step.ipynb
-    \item OpenAI: Prompt Engineering Guide
-    \item DeepLearning.AI: Prompt Engineering short course
-    \item Google: Prompting with Gemini (developers site)
-    \item Microsoft: Prompt Engineering Guidelines
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Takeaways}
-  \begin{itemize}
-    \item Clear, structured prompts + role control drive quality.
-    \item Separate instructions/data; require parseable outputs.
-    \item Iterate with two-step prompting before running code.
-  \end{itemize}
+  Model used in the lab: \texttt{gemini-3.5-flash-lite}.
+  \par\vspace{0.5em}
+  \small Keep the key private. The notebook reads \texttt{.env}; do not put your key in a notebook cell or commit it to Git.
+  \par\vspace{0.5em}
+  Set \texttt{RUN\_LIVE = True} in the notebook to enable API requests.
+  \par\vspace{0.3em}
+  \footnotesize \href{https://ai.google.dev/gemini-api/docs/api-key}{Google's API-key setup guide} \hfill Checked 20 October 2026.
 \end{frame}
 
 \end{document}

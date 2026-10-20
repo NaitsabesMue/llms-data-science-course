@@ -12,6 +12,7 @@ transformers
 sentence-transformers
 rank-bm25
 python-dotenv
+jsonschema
 datasets
 huggingface-hub
 plotly

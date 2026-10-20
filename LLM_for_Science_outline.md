@@ -1,6 +1,6 @@
 # Large Language Models in Data Science
 
-**2026–2027 · 21 hours · revised 3 October 2026**
+**2026–2027 · 21 hours · revised 19 October 2026**
 
 ## Message to students
 
@@ -32,9 +32,9 @@ Keep the original six teaching blocks and the approximately 7-hour lecture / 7-h
 |---|---|---|
 | 1 — LLMs: a primer | Text representations, tokenization, embeddings, neural networks, autoregressive prediction, self-attention, transformer blocks, training versus inference. Keep the original figures and worked explanations. | Compare tokenizers, inspect embeddings and similarities, explain the prediction path. |
 | 2 — Hugging Face | Choose a checkpoint; trace a pipeline into tokenization, model scores and labels; apply generation settings; introduce chat templates; measure batching, quality and runtime. | Retain the original DistilBERT/BERT sentiment comparison and GPT-2 example. Record exact revisions and compare balanced IMDB examples. Chat, precision and hosted inference remain optional. [First-revision notes](docs/week_2_review.md). |
-| 3 — Effective LLM use | Clear tasks, system/user instructions, context, output formats, prompt revision, coding, research, and analysis. | Retain the role and JSON exercises. Generate `analyze(df)` for the churn dataset, execute in a separate Docker environment, inspect statistics and plots. |
-| 4 — Classification and routing | Rules, embeddings with logistic regression, zero-shot classification, and prompted LLMs; accuracy and latency. | Retain the AMU chatbot task. Compare methods on held-out cases and count invalid outputs/API failures. |
-| 5 — Retrieval, then agent loops | Retain the RAG diagrams and explanations: chunking, BM25, embeddings, hybrid retrieval, metadata filters, and source support. First compare retrieval with full-document context. Finish with tools, observations, revisions, and stopping rules. | Keep the retrieval notebook; deeper retrieval experiments are optional. Extend generated Python into an agent loop with execution feedback and independent checks. Compare with provider-managed code execution. |
+| 3 — From a task to a verified analysis | Follow one churn question: define the task and context, inspect a hosted API call, distinguish JSON parsing, schema validation and factual correctness, then generate, execute and check Python. Revise from actual results. | Predict the six-row result; validate structured JSON; generate and inspect loading and analysis functions; improve the plot; check the same code on all 600 rows. Compare full-CSV and generated-code routes on correctness, tokens and cost. Finish by reusing the workflow for customers in their first year. Label saved examples when live calls or Docker are skipped. |
+| 4 — Classification and evaluation | Preserve the four-method AMU comparison: rules, embeddings with logistic regression, zero-shot classification and prompted LLMs. Define labels, development/test splits, accuracy, precision/recall, latency and cost. | Compare methods on the same held-out cases. Count invalid outputs and API failures. Use development-case errors to identify what evidence or actions could help; keep the final test set separate. |
+| 5 — Evidence and agent loops | Spend roughly the first third on full-document context versus RAG, preserving the clearest diagrams. Focus the remaining time on tools, observations, revisions, independent checks and stopping conditions. | Prioritise the working Python agent loop. Retain a short retrieval comparison; detailed chunking, BM25, hybrid retrieval and filtering experiments remain available for further study. Revisit the classification task to test whether added evidence or tool actions help, and compare quality, time and cost against Week 4's baselines. |
 | 6 — Hackathon | Existing briefing, team project, demonstrations, and discussion. | Deliver a reproducible project and compare quality, total time, and API usage/cost with a baseline. |
 
 ## What students should be able to do
@@ -49,6 +49,8 @@ Keep the original six teaching blocks and the approximately 7-hour lecture / 7-h
 ## Retrieval and loops
 
 RAG is still useful: it supplies selected evidence to generation. A small corpus may fit directly into the prompt, so retrieval is a choice to test rather than a requirement. Compare answer quality, source support, latency, and cost. A long context window does not guarantee use of every relevant fact. See [Google's long-context guidance](https://ai.google.dev/gemini-api/docs/long-context).
+
+Classification connects the final teaching blocks. Establish simple baselines in Week 4, inspect development-case errors, then test targeted additions in Week 5. Missing definitions may call for clearer labels; missing policy information may call for document context or retrieval; missing live facts may call for a tool. An agent can decide which further actions to take. None of these additions is assumed to improve performance: evaluate the final versions on the same untouched test set. Preserve the original classification comparison as the course's main worked example of quality control.
 
 The final agent follows **task → propose code/tool call → validate → execute → observe → revise**. Stop after a verified result or a step/time limit. A dictionary of Python globals does not isolate generated code; use a separate execution environment. The checks run outside that environment. Revising code from feedback changes the workflow, not the model's weights.
 

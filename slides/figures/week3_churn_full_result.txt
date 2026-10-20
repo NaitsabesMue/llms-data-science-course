@@ -1,0 +1,4 @@
+ contract_type  n_customers  n_churn  churn_rate
+month-to-month          333      209       0.628
+      one-year          136       69       0.507
+      two-year          131       72       0.550
