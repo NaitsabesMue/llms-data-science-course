@@ -1,0 +1,12 @@
+{
+  "description": "Fictional teaching documents, not AMU policies.",
+  "question": "J'ai perdu ma carte étudiante. Comment la remplacer ?",
+  "documents": [
+    {"id": "D1", "title": "Card activation", "text": "Activate a new student card through the student portal."},
+    {"id": "D2", "title": "Lost student card", "text": "If you lose your student card, request a replacement at the student office."},
+    {"id": "D3", "title": "Collecting a replacement card", "text": "Collect the replacement card at the student office and bring photo ID."},
+    {"id": "D4", "title": "Library loans", "text": "Renew a library loan through your library account."},
+    {"id": "D5", "title": "Campus Wi-Fi", "text": "Connect to the campus Wi-Fi using your university login."},
+    {"id": "D6", "title": "Course timetable", "text": "Find lecture times and rooms in the timetable portal."}
+  ]
+}

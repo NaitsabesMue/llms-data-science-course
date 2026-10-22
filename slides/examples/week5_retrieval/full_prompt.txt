@@ -1,0 +1,14 @@
+System instructions:
+Answer in French using the supplied documents.
+Cite the document IDs. Say when information is missing.
+
+User message:
+DOCUMENTS:
+[D1] Activate a new student card through the student portal.
+[D2] If you lose your student card, request a replacement at the student office.
+[D3] Collect the replacement card at the student office and bring photo ID.
+[D4] Renew a library loan through your library account.
+[D5] Connect to the campus Wi-Fi using your university login.
+[D6] Find lecture times and rooms in the timetable portal.
+QUESTION:
+J'ai perdu ma carte étudiante. Comment la remplacer ?

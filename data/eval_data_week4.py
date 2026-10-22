@@ -1,21 +1,28 @@
-# Evaluation data for week 4 classification lab
+"""Week 4 final test: 20 hand-written synthetic requests, four per label.
+
+Load only after development. These replace the old overlapping evaluation set.
+They are teaching examples, not observations of real student traffic.
+"""
 
 eval_data = [
-    {"text": "Quand est mon prochain cours?", "label": "get_schedule"},
-    {"text": "Je peux faire la fete ce soir, ou cous dmain matin?", "label": "get_schedule"},
-    {"text": "Quelle salle pour mon cours de 10h?", "label": "get_schedule"},
-    {"text": "Où est ma boite de réception?", "label": "check_email"},
-    {"text": "J'ai reçu un mel important?", "label": "check_email"},
-    {"text": "Je dois ecrire un mail à mon prof", "label": "check_email"},
-    {"text": "Je dois m'inscrire en L3", "label": "register_classes"},
-    {"text": "C'est quand les IP?", "label": "register_classes"},
-    {"text": "Comment faire pour s'inscrire aux cours?", "label": "register_classes"},
-    {"text": "Mince, j ai perdu ma crte étudiante", "label": "get_student_card"},
-    {"text": "Je veux charger ma carte étudiante", "label": "get_student_card"},
-    {"text": "Comment recuperer ma carte etudiante?", "label": "get_student_card"},
-    {"text": "Les horaires de la BU St Charles, c'est où?", "label": "find_library_info"},
-    {"text": "Comment réserver un livre à la BU d'AMU?", "label": "find_library_info"},
-    {"text": "Je dois rendnre en pret?", "label": "find_library_info"},
-    {"text": "Salut, ca va?", "label": "chat"},
-    {"text": "Le banana est plus jaune que la grenouille.", "label": "unknown"}
+    {"text": "Le cours de statistiques a-t-il changé d'amphi ?", "label": "get_schedule"},
+    {"text": "Est-ce que la séance de chimie a été annulée ?", "label": "get_schedule"},
+    {"text": "Je change de groupe de TD, où voir mes nouveaux créneaux ?", "label": "get_schedule"},
+    {"text": "À quelle date se termine notre dernière séance de physique ?", "label": "get_schedule"},
+    {"text": "Comment retrouver un message dans les éléments envoyés ?", "label": "check_email"},
+    {"text": "Le courrier de mon enseignant est peut-être dans les indésirables", "label": "check_email"},
+    {"text": "Je voudrais ouvrir la pièce jointe reçue de la scolarité", "label": "check_email"},
+    {"text": "Mon espace de stockage de courriels est plein", "label": "check_email"},
+    {"text": "J'aimerais remplacer mon option de cinéma par une option de musique", "label": "register_classes"},
+    {"text": "Une unité d'enseignement manque dans mon inscription pédagogique", "label": "register_classes"},
+    {"text": "J'ai validé la mauvaise option, comment corriger mon choix ?", "label": "register_classes"},
+    {"text": "Je veux abandonner une matière facultative ce semestre", "label": "register_classes"},
+    {"text": "Le nom imprimé sur mon badge étudiant est erroné", "label": "get_student_card"},
+    {"text": "Puis-je changer la photo de ma carte étudiante ?", "label": "get_student_card"},
+    {"text": "J'ai retrouvé ma carte après l'avoir déclarée perdue", "label": "get_student_card"},
+    {"text": "Le paiement du remplacement de ma carte a été refusé", "label": "get_student_card"},
+    {"text": "Est-ce que la bibliothèque dispose d'une salle de travail en groupe ?", "label": "find_library_info"},
+    {"text": "Je cherche une prise électrique dans les espaces de lecture de la BU", "label": "find_library_info"},
+    {"text": "Une pénalité apparaît sur mon compte lecteur, qui contacter ?", "label": "find_library_info"},
+    {"text": "Comment consulter les revues numériques de la bibliothèque depuis chez moi ?", "label": "find_library_info"},
 ]

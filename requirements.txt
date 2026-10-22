@@ -10,7 +10,11 @@ scikit-learn
 torch
 transformers
 sentence-transformers
+sentencepiece
+protobuf
 rank-bm25
+requests
+beautifulsoup4
 python-dotenv
 jsonschema
 datasets

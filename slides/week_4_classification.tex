@@ -1,123 +1,402 @@
 \documentclass[aspectratio=169]{beamer}
 \usepackage{beamerthemeAMU}
-\usepackage{amsmath}
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{listings}
-\usepackage{hyperref}
+\usepackage{amsmath,booktabs,array,listings,hyperref,tikz}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-
-% Listing style for code snippets (kept consistent with prior weeks)
-\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{AMU_dk2}\bfseries,commentstyle=\itshape\color{gray},showstringspaces=false,columns=flexible}
+\usetikzlibrary{arrows.meta,positioning}
+\lstset{basicstyle=\ttfamily\footnotesize,keywordstyle=\color{AMU_dk2}\bfseries,
+  commentstyle=\itshape\color{gray},showstringspaces=false,
+  columns=flexible,keepspaces=true,breaklines=true}
+\tikzset{routebox/.style={draw=AMU_dk2,rounded corners=3pt,align=center,
+  minimum height=1.1cm,inner sep=6pt,font=\small},
+  routearrow/.style={-{Stealth},thick,draw=AMU_acc1}}
 
 \title{Large Language Models in Data Science}
-\subtitle{Week 4: Text Classification — Intent Routing for AMU Chatbot}
+\subtitle{Week 4: Text Classification --- Compare Before Choosing}
 \author{Sebastian Mueller}
 \institute{Aix-Marseille Universit\'e}
 \date{2026--2027}
 
 \begin{document}
+\begin{frame}[plain]\titlepage\end{frame}
 
-\begin{frame}[plain]
-  \titlepage
+\begin{frame}{Which Method Would You Put in the Workflow?}
+  \textbf{Week 3}: generate an analysis, run it and check the result.
+  \par\vspace{0.6em}
+  \textbf{Today}: several methods can perform the same task. How do we choose?
+  \begin{block}{Our task}
+    A student asks for help. Select the university service that should receive the request.
+  \end{block}
+  We will compare four approaches: regex rules, embeddings with
+  logistic regression, a pretrained classifier using intent descriptions and a prompted LLM.
+  \par\vspace{0.6em}
+  The decision needs evidence: correct labels, types of errors, response time and cost.
 \end{frame}
 
-\begin{frame}{Session Overview}
-  \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.55\linewidth}
-      \textbf{Lecture (15min)}
-      \begin{enumerate}
-        \item Problem framing: intent classification
-        \item Dataset design and labels
-        \item Baselines: regex rules
-        \item Embeddings + Logistic Regression
-        \item Zero-shot NLI pipeline
-        \item LLM prompting for classification
-        \item Comparison and trade-offs
-      \end{enumerate}
+\section{Define the Task and the Comparison}
+
+\begin{frame}{From a Student's Request to a Service}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.43\linewidth}
+      \includegraphics[width=\linewidth]{ent_etudiant.png}
+      \par\small AMU portal: the setting for our teaching example.
     \end{column}
-    \begin{column}{0.4\linewidth}
-      \textbf{Lab (2.5h)}
-      \begin{itemize}
-        \item Build 4 classifiers (regex, embed+LR, zero-shot, LLM)
-        \item Measure accuracy and latency
-        \item Analyze failure cases and label phrasing
-        \item Extend training data and re-evaluate
-        \item Optional: add a new intent
-      \end{itemize}
+    \begin{column}{0.53\linewidth}
+      \begin{tikzpicture}[node distance=0.45cm]
+        \node[routebox,text width=5.1cm,fill=AMU_lt2!50] (query) {Student's request\\``Ouvrir ma messagerie''};
+        \node[routebox,text width=5.1cm,below=of query] (classifier) {Classifier\\Predicts a label for the request};
+        \node[routebox,text width=5.1cm,below=of classifier,fill=AMU_dk2!10] (label) {\texttt{check\_email}\\Route to the email service};
+        \draw[routearrow] (query) -- (classifier);
+        \draw[routearrow] (classifier) -- (label);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+  \end{frame}
+
+\begin{frame}{Define the Labels Before Building a Classifier}
+  \small
+  \begin{tabular}{@{}p{4.2cm}>{\raggedright\arraybackslash}p{3.1cm}p{5.0cm}@{}}
+    \toprule
+    \textbf{Label} & \textbf{Intent} & \textbf{Example request} \\
+    \midrule
+    \texttt{get\_schedule} & View class timetable & ``Voir mes cours de demain'' \\
+    \texttt{check\_email} & Read student email & ``Ouvrir ma messagerie'' \\
+    \texttt{register\_classes} & Register for classes & ``Je dois faire mon IP'' \\
+    \texttt{get\_student\_card} & Manage student card & ``J'ai perdu ma carte'' \\
+    \texttt{find\_library\_info} & Find library information & ``La BU est ouverte ?'' \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+\begin{frame}{Split the Labelled Data into Three Sets}
+  \begin{center}
+  \begin{tikzpicture}
+    \node[routebox,text width=11.8cm,fill=AMU_dk2!7] (data) at (0,0)
+      {\textbf{Labelled requests}\\Each request is paired with its correct intent label.};
+    \node[routebox,text width=3.3cm,minimum height=1.95cm,fill=AMU_dk2!10]
+      (train) at (-4.2,-2.05)
+      {\textbf{Training set}\\[0.4em]Fit the classifier.\\Supply examples.};
+    \node[routebox,text width=3.3cm,minimum height=1.95cm,fill=AMU_lt2!60]
+      (dev) at (0,-2.05)
+      {\textbf{Development set}\\[0.4em]Check errors.\\Adjust and repeat.};
+    \node[routebox,text width=3.3cm,minimum height=1.95cm,fill=AMU_acc5!40]
+      (test) at (4.2,-2.05)
+      {\textbf{Test set}\\[0.4em]Keep unseen during\\development.};
+
+    % Data split: one rail and three straight, downward arrowheads.
+    \draw[draw=AMU_acc1,thick] (data.south) -- (0,-0.8);
+    \draw[draw=AMU_acc1,thick] (-4.2,-0.8) -- (4.2,-0.8);
+    \draw[routearrow] (-4.2,-0.8) -- (train.north);
+    \draw[routearrow] (0,-0.8) -- (dev.north);
+    \draw[routearrow] (4.2,-0.8) -- (test.north);
+
+    \node[routebox,text width=5.3cm,minimum height=1.1cm,fill=AMU_lt2!30]
+      (candidate) at (-2.1,-4.5)
+      {\textbf{Selected method}\\All settings fixed};
+    \node[routebox,text width=3.3cm,minimum height=1.1cm,fill=AMU_acc5!40]
+      (evaluate) at (4.2,-4.5)
+      {\textbf{Final evaluation}\\Measure performance};
+
+    % Training and development determine the candidate; test data do not.
+    \draw[draw=AMU_acc1,thick] (train.south) -- (-4.2,-3.25) -- (-2.1,-3.25);
+    \draw[draw=AMU_acc1,thick] (dev.south) -- (0,-3.25) -- (-2.1,-3.25);
+    \draw[routearrow] (-2.1,-3.25) -- (candidate.north);
+    \draw[routearrow] (test.south) -- (evaluate.north);
+    \draw[-{Stealth},line width=1.7pt,draw=AMU_acc6]
+      (candidate.east) -- node[above,align=center,font=\small,text=AMU_acc6]
+      {Final\\candidate} (evaluate.west);
+  \end{tikzpicture}
+  \end{center}
+  \note{The purple arrow carries the selected method, not data. The held-out test set enters final evaluation separately. Compare all four methods on the same test requests. The revised notebook uses 50 training requests, 10 initial development requests and 20 separate synthetic test requests loaded only after development. LLM-generated debugging requests extend the development set after student review. Keep duplicate requests and closely related paraphrases in the same split. Source: https://scikit-learn.org/stable/common_pitfalls.html.}
+\end{frame}
+
+\begin{frame}{Four approaches for classification}
+  \small\renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{3.9cm}@{}}
+    \toprule
+    \textbf{Method} & \textbf{How the label is chosen} & \textbf{What we supply} \\
+    \midrule
+    Regex rules & Match specified text patterns. & Rules written by us. \\
+    Embeddings + logistic regression & Convert the request to a vector, then classify that vector. & Labelled training requests. \\
+    Pretrained classifier & Give it the request and five possible intents. It scores each intent; select the highest. & Intent descriptions, such as ``student email''. \\
+    Prompted LLM & Ask the model to classify the request and return its label. & Label definitions and a reply format. \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+\section{Follow One Request Through Four Methods}
+
+\begin{frame}[fragile]{1. Regex Rules: Match Text Patterns}
+  \small A regular expression (regex) specifies a text pattern. Here, \texttt{|} means ``or'': match \texttt{messagerie} or \texttt{email}.
+\begin{lstlisting}[language=Python]
+import re
+
+def email_rule(query):
+    if re.search("messagerie|email", query.lower()):
+        return "check_email"
+    return None  # No matching rule; no label selected.
+
+email_rule("Ouvrir ma messagerie")  # "check_email"
+\end{lstlisting}
+  \small The complete classifier has rules for all five labels and an explicit policy when several rules match or none does.
+  \begin{block}{A request the rule misses}
+    ``Consulter mes e-mails'' returns \texttt{None}: the pattern \texttt{email} does not match \texttt{e-mail}.
+  \end{block}
+\end{frame}
+
+\begin{frame}{2. Embeddings: Represent the Whole Request by a Vector}
+  \small In Week 1, vectors represented text. Here we use a pretrained \textbf{sentence-embedding model}: it converts a request into one fixed-length vector.
+  \begin{center}
+    \begin{tikzpicture}[node distance=0.4cm]
+      \node[routebox,text width=3.4cm,fill=AMU_lt2!50] (query) {``Ouvrir ma messagerie''};
+      \node[routebox,text width=3.6cm,right=of query] (embed) {Pretrained\\embedding model};
+      \node[routebox,text width=3.4cm,right=of embed,fill=AMU_dk2!10] (vector) {$\mathbf{x}\in\mathbb{R}^{384}$\\384 numbers};
+      \draw[routearrow] (query) -- (embed);
+      \draw[routearrow] (embed) -- (vector);
+    \end{tikzpicture}
+  \end{center}
+  \small In the lab we use \href{https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}{multilingual MiniLM}. It supports French and produces 384 numbers per request.
+  \par\vspace{0.6em}
+  The vector has no intent label yet. We must learn a mapping from these features to the five labels.
+\end{frame}
+
+\begin{frame}{Train a Classifier on Those Vectors}
+  \small Pair each training request's vector with its reference label. Fit a \textbf{multinomial logistic-regression classifier} to predict those labels.
+  \par\vspace{0.4em}
+  For a new vector $\mathbf{x}$, calculate one score for each class $c$:
+  \[
+    s_c = \mathbf{w}_c^\top\mathbf{x}+b_c,
+    \qquad \widehat{y}=\underset{c}{\operatorname{argmax}}\;s_c.
+  \]
+  \small $\mathbf{x}$ is the request's vector; $\mathbf{w}_c$ is the class's weight vector; $b_c$ is its bias. Training learns the weights and biases. $\widehat{y}$ is the predicted label: the class with the largest score.
+  \begin{center}
+    \begin{tikzpicture}[node distance=0.45cm]
+      \node[routebox,text width=3.1cm] (vector) {Request vector\\$\mathbf{x}$};
+      \node[routebox,text width=4.2cm,right=of vector] (classifier) {Trained classifier\\Five class scores};
+      \node[routebox,text width=3.1cm,right=of classifier,fill=AMU_dk2!10] (label) {Predicted label\\e.g.\ \texttt{check\_email}};
+      \draw[routearrow] (vector) -- (classifier);
+      \draw[routearrow] (classifier) -- (label);
+    \end{tikzpicture}
+  \end{center}
+  \small We keep the embedding model fixed.
+\end{frame}
+
+\begin{frame}{3. Pretrained Classifier}
+  \small We supply the request and a description of each of our five labels.
+  \par\vspace{0.4em}
+  \renewcommand{\arraystretch}{1.1}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{8.1cm}@{}}
+    \toprule
+    \textbf{Our label} & \textbf{Description supplied to the model} \\
+    \midrule
+    \texttt{get\_schedule} & View class timetable \\
+    \texttt{check\_email} & Read student email \\
+    \texttt{register\_classes} & Register for classes \\
+    \texttt{get\_student\_card} & Manage student card \\
+    \texttt{find\_library\_info} & Find library information \\
+    \bottomrule
+  \end{tabular}
+  \par\vspace{0.3em}
+  \small Our model is multilingual mDeBERTa, already trained to judge whether a text supports a proposed statement.
+  \par\vspace{0.4em}
+  For example: does ``Ouvrir ma messagerie'' support ``The student wants to read student email''?
+  \par\vspace{0.4em}
+  The model scores this support for each intent. Select the label with the highest score.
+  \note{This is the original notebook's zero-shot-classification pipeline using MoritzLaurer/mDeBERTa-v3-base-mnli-xnli. The base model is trained for natural language inference (NLI): classify a text pair as entailment, contradiction or neutral. The pipeline pairs the request with a statement built from each candidate description, then normalizes entailment logits across candidates in single-label mode. The statement on the slide illustrates the comparison; the exact wording is determined by the pipeline's hypothesis template. These internal relationships are not additional AMU intent labels and need not be a separate lecture topic. Not every pretrained classifier accepts arbitrary candidate descriptions. Sources: https://huggingface.co/docs/transformers/en/main_classes/pipelines and https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli.}
+\end{frame}
+
+\begin{frame}[fragile]{4. Prompt an LLM to Return a Label}
+  \small Reuse Week 3's API call: system instructions define the task; the user message supplies the request.
+\begin{lstlisting}
+System instructions: Classify the student's intent.
+get_schedule: class timetable and teaching rooms
+check_email: student email and inbox
+register_classes: course registration
+get_student_card: student card
+find_library_info: library hours, books and borrowing
+Return JSON: one "label" field with a label above.
+
+User message: Ouvrir ma messagerie
+\end{lstlisting}
+  \small Desired reply for this example:
+\begin{lstlisting}
+{"label": "check_email"}
+\end{lstlisting}
+  \small Here the model generates the JSON reply as text. We parse its label and compare it with the reference label.
+\end{frame}
+
+\begin{frame}{A Valid Reply Can Still Select the Wrong Service}
+  \small Keep the two checks from Week 3:
+  \par\vspace{0.5em}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{@{}p{5.0cm}p{3.4cm}p{3.9cm}@{}}
+    \toprule
+    \textbf{Reply} & \textbf{Format and allowed label} & \textbf{Correct label?} \\
+    \midrule
+    \texttt{\{"label": "check\_email"\}} & Valid & Yes, for our request. \\
+    \texttt{\{"label": "get\_schedule"\}} & Valid & No. \\
+    \texttt{The student wants email.} & Invalid: not the required JSON. & No usable label returned. \\
+    No API response & Request failed. & No usable label returned. \\
+    \bottomrule
+  \end{tabular}
+  \par\vspace{0.6em}
+  \small Structured output can constrain the format and allowed labels where supported. It does not guarantee the correct label.
+  \end{frame}
+
+\section{Measure Quality, Time and Cost}
+
+\begin{frame}{Accuracy: How Many Requests Were Classified Correctly?}
+  \[
+    \text{Accuracy}=\frac{\text{number of correct labels}}{\text{number of test requests}}.
+  \]
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\linewidth}
+      \small\textbf{Illustrative counts, not model results}
+      \par\vspace{0.4em}
+      \renewcommand{\arraystretch}{1.2}
+      \begin{tabular}{@{}lr@{}}
+        \toprule
+        Correct label & 43 \\
+        Wrong allowed label & 5 \\
+        Invalid reply or no match & 1 \\
+        API failure & 1 \\
+        \midrule
+        Total test requests & 50 \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.47\linewidth}
+      \small
+      In this example, accuracy is $43/50=86\%$.
+      \par\vspace{0.7em}
+      The two requests without usable labels stay in the denominator. We also report their failure types separately.
+      \par\vspace{0.7em}
+      If retries are allowed, fix the policy before testing and include their time and API usage.
     \end{column}
   \end{columns}
 \end{frame}
 
-\section{Project Context}
-\begin{frame}{AMU Chatbot}
+\begin{frame}{The Confusion Matrix Shows Which Labels Are Confused}
+  \small A \textbf{confusion matrix} counts reference labels against predicted labels. Rows below are the reference labels; columns are the predicted labels.
+  \par\vspace{0.6em}
   \begin{center}
-\includegraphics[width=0.5\linewidth]{ent_etudiant.png}
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabular}{@{}lrrrrrr@{}}
+    \toprule
+    \textbf{Expected $\backslash$ predicted} & Schedule & Email & Register & Card & Library & No label \\
+    \midrule
+    Schedule & \textcolor{AMU_dk2}{8} & 0 & 1 & 0 & 0 & 1 \\
+    Email    & 0 & \textcolor{AMU_dk2}{9} & 0 & 1 & 0 & 0 \\
+    Register & 0 & 0 & \textcolor{AMU_dk2}{9} & 0 & 0 & 1 \\
+    Card     & 0 & 0 & 0 & \textcolor{AMU_dk2}{9} & 1 & 0 \\
+    Library  & 1 & 0 & 0 & 1 & \textcolor{AMU_dk2}{8} & 0 \\
+    \bottomrule
+  \end{tabular}
   \end{center}
+  \small Same illustrative 50 requests: the diagonal contains 43 correct labels. ``No label'' combines the invalid reply and API failure.
+  \par\vspace{0.3em}
+  Which errors send students to the wrong service?
+\end{frame}
+
+\begin{frame}{Precision and Recall Answer Different Questions}
+  \small Focus on the \textbf{library} class in the same matrix. There are 10 actual library requests; 8 are classified correctly. One card request is also classified as library.
+  \par\vspace{0.7em}
+  \[
+    \text{Library recall}
+    =\frac{\text{correct library predictions}}{\text{all actual library requests}}
+    =\frac{8}{10}=80\%.
+  \]
+  \small Of the students who need the library, how many do we send there?
+  \par\vspace{0.5em}
+  \[
+    \text{Library precision}
+    =\frac{\text{correct library predictions}}{\text{all library predictions}}
+    =\frac{8}{9}\approx89\%.
+  \]
+  \small Of the students sent to the library, how many actually need it?
+  \par\vspace{0.7em}
+  Report these measures for every class. Overall accuracy can hide poor performance on a less frequent service.
+\end{frame}
+
+\begin{frame}{Measure Prediction Time and Token Usage}
   \begin{itemize}
-    \item AMU is developing a student support chatbot (in French and English).
-    \item The chatbot needs to route student queries to the right AMU service/tool.
-    \item Reliable intent classification is critical for user satisfaction.
+    \item \textbf{Prediction time}: how long it takes to obtain a label for a request. Start with the model already loaded; exclude training time.
+    \item \textbf{API token usage}: record the input and output tokens reported by the API for each request.
   \end{itemize}
 \end{frame}
 
-
-
-\begin{frame}{Project: AMU Chatbot Brain}
-  \begin{itemize}
-    \item \textbf{Goal}: Map student queries to AMU services (\emph{intent routing}).
-    \item \textbf{Task}: Given a short query, predict one of 5 intents.
-    \item \textbf{Why it matters}: Enables reliable hand-off to the right tool/API.
-  \end{itemize}
-  \vspace{0.4em}
-  \textbf{Intents (lab setup)}
-  \begin{itemize}
-    \item \texttt{get\_schedule} (Planning des cours / ADE)
-    \item \texttt{check\_email} (Ma messagerie)
-    \item \texttt{register\_classes} (Inscriptions p\'edagogiques / IP)
-    \item \texttt{get\_student\_card} (Ma carte AMU)
-    \item \texttt{find\_library\_info} (BU / Compte Lecteur BU)
-  \end{itemize}
+\begin{frame}[fragile]{Improve a Regex Rule with an LLM}
+  \small Our rule misses ``Consulter mes e-mails''. Its reference label is \texttt{check\_email}.
+  \begin{block}{Ask the LLM to extend the rule}
+    \small Our Python regex is \texttt{messagerie|email}. It misses ``Consulter mes e-mails''. Modify it to match both ``email'' and ``e-mail'', while keeping ``messagerie''.
+  \end{block}
+  \small A possible revision:
+\begin{lstlisting}[language=Python]
+pattern = "messagerie|e-?mail"
+re.search(pattern, "Consulter mes e-mails".lower())
+\end{lstlisting}
+  \small \texttt{-?} means the hyphen is optional: both spellings now match.
+  \par\vspace{0.6em}
+  Run the revised classifier on all development requests. Count corrected predictions and any new errors before keeping the change.
 \end{frame}
 
-\section{Methods}
-
-\begin{frame}{Four Approaches at a Glance}
-  \begin{itemize}
-    \item \textbf{Regex baseline}: Fastest and transparent; brittle, hard to scale.
-    \item \textbf{Embeddings + LogisticRegression}: Train on labelled examples; measure held-out accuracy and inference time.
-    \item \textbf{Zero-shot classification (MNLI)}: No training; label phrasing matters; moderate latency.
-    \item \textbf{LLM prompt}: Describe labels in the prompt; measure accuracy, latency, and invalid outputs.
-  \end{itemize}
+\begin{frame}[fragile]{Generate Synthetic Debugging Data with an LLM}
+  \small Synthetic data are invented examples. Ask an LLM to create ten requests for our development set:
+\begin{lstlisting}
+Create 10 French student requests, two per label:
+get_schedule: view class timetable
+check_email: read student email
+register_classes: register for classes
+get_student_card: manage student card
+find_library_info: find library information
+Vary the wording; include abbreviations and typos.
+Each request must express one intent.
+Return CSV with columns text,label.
+\end{lstlisting}
+  \begin{enumerate}
+    \item Read each request and check its assigned label.
+    \item Run the classifier on these requests and inspect the mistakes.
+    \item Revise the rules or prompt, then rerun the development set.
+  \end{enumerate}
 \end{frame}
 
-\begin{frame}{Evaluation Plan}
-  \begin{itemize}
-    \item \textbf{Metrics}: \emph{Accuracy} (correct label) and \emph{Latency} (ms per query).
-    \item \textbf{Protocol}: Run all methods on the same test set; record predictions+timings.
-    \item \textbf{Compute note}: Latency varies by device (CPU vs. GPU); compare on same hardware when possible.
-    \item \textbf{Reproducibility}: Pin model names/revisions; save prompts and candidates; fix seeds where relevant.
-  \end{itemize}
+\section{Next Week}
+
+\begin{frame}{Next Week: From a Label to an Answer}
+  \small ``J'ai perdu ma carte étudiante. Comment la remplacer ?''
+  \begin{block}{This week: classify the request}
+    \small Predict the label \texttt{get\_student\_card}.
+  \end{block}
+  \begin{block}{Next week: answer the question using university documents}
+    \small
+    \begin{enumerate}
+      \item Find the document describing how to replace a student card.
+      \item Give the relevant passage to the LLM with the question. This passage is the added context.
+      \item Ask the LLM to explain the procedure using that passage.
+    \end{enumerate}
+  \end{block}
+  \small If the document lacks the replacement procedure, the LLM can request another search, inspect the result and decide whether it can answer.
 \end{frame}
 
-\begin{frame}{Design Tips}
-  \begin{itemize}
-    \item \textbf{Regex}: Prefer precise patterns; avoid overbroad keywords (e.g., plain "amu").
-    \item \textbf{Embeddings}: Use multilingual sentence models; validate with cross-validation if data grows.
-    \item \textbf{Zero-shot}: Use descriptive, possibly multilingual labels (\emph{emploi du temps} vs. \emph{get\_schedule}).
-    \item \textbf{LLM prompting}: Specify role, label set, and \emph{strict output format} (JSON / one token).
-  \end{itemize}
+\begin{frame}{Lab: Compare the Four Methods and Defend a Choice}
+  \begin{enumerate}
+    \item Inspect the requests and agree what each of the five labels means.
+    \item Prepare separate training, development and final test examples.
+    \item Run the four classifiers. Inspect at least one complete prediction from each method.
+    \item Improve one method using development errors, then freeze its settings.
+    \item Compare the final methods on the same test requests: correctness, per-class errors, failures, latency and API usage.
+  \end{enumerate}
+  \par\vspace{0.6em}
+  \textbf{Decision}: which method would you deploy for this task, and what evidence or additional data would you need before doing so?
 \end{frame}
 
-\section{Takeaways}
-
-\begin{frame}{Key Takeaways \& Recommendations}
+\begin{frame}{Further Reading: Classification and Evaluation}
+  \small
   \begin{itemize}
-    \item Start with \textbf{embeddings + LR} for a strong, fast baseline.
-    \item Use \textbf{zero-shot} for quick prototyping or new intents without data.
-    \item Keep a small \textbf{regex layer} for guardrails and trivial routes.
-    \item Add an \textbf{LLM fallback} for ambiguous/edge cases; require structured outputs and log decisions.
+    \item \href{https://scikit-learn.org/stable/common_pitfalls.html}{scikit-learn: common pitfalls and data leakage} --- why model choices must not use the final test examples.
+    \item \href{https://scikit-learn.org/stable/modules/model_evaluation.html\#classification-metrics}{scikit-learn: classification metrics} --- accuracy, confusion matrices, precision and recall.
+    \item \href{https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}{Multilingual MiniLM model card} --- the fixed sentence-embedding model used before logistic regression.
+    \item \href{https://huggingface.co/docs/transformers/en/main_classes/pipelines\#transformers.ZeroShotClassificationPipeline}{Hugging Face: zero-shot classification pipeline} and \href{https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli}{the multilingual NLI model card} --- how candidate descriptions become text pairs.
   \end{itemize}
 \end{frame}
 

@@ -18,23 +18,33 @@ For final-year data science students with a strong mathematics background and wo
 
 Approximately 7 hours of lectures, 7 hours of labs, and a 7-hour hackathon. The six teaching blocks retain last year's order; adjust lecture/lab pacing to fit the timetable.
 
-Weeks 1–3 have been revised for the current course. Weeks 4–6 remain in the outline; their material links will be added after review.
+Weeks 1–4 have been revised for the current course. Week 5's slides and new lab are aligned and ready for joint notebook review. Week 6 remains in the outline.
 
 | Week | Topic | Slides | Lab |
 |---|---|---|---|
 | 1 | LLMs: a primer — tokens, embeddings, self-attention, transformers | [PDF](slides/week_1_intro.pdf) · [source](slides/week_1_intro.tex) | [Tokenization and embeddings](labs/week_1_tokenization.ipynb) |
 | 2 | Hugging Face — pretrained models, pipelines, generation and batching | [PDF](slides/week_2_huggingface.pdf) · [source](slides/week_2_huggingface.tex) | [Using pretrained models](labs/week_2_huggingface_basics.ipynb) |
 | 3 | From a task to a verified analysis — API calls, generated Python and feedback | [PDF](slides/week_3_effective_llm_use.pdf) · [source](slides/week_3_effective_llm_use.tex) | [Generate, execute and check an analysis](labs/week_3_effective_llm_use.ipynb) |
+| 4 | Text classification — four methods, evaluation and improvement | [PDF](slides/week_4_classification.pdf) · [source](slides/week_4_classification.tex) | [Compare and improve classifiers](labs/week_4_classification.ipynb) |
+| 5 | AMU assistant — collect webpages, retrieve evidence, review answers and compare web search | [PDF](slides/week_5_rag.pdf) · [source](slides/week_5_rag.tex) | [Build and evaluate an AMU assistant](labs/week_5_rag.ipynb) |
 
 The original illustrated introduction remains the foundation. RAG remains in the course, with a comparison against supplying the full document set. Detailed retrieval experiments are optional if more time is needed for the final agent loop.
 
 See the [lecture outline](LLM_for_Science_outline.md), [recent lecture videos and readings](docs/references.md), and [revision notes](docs/2026_revision.md).
+
+The [Week 4 revision notes](docs/week_4_review.md) describe the aligned slides and notebook. The [course editing skill](skills/course-lecture-review/SKILL.md) records the teaching standards established during the joint revisions.
+
+Week 5 follows student questions from document context to an answer–review loop, then builds RAG from official AMU webpages and compares it with web search. The [revision notes](docs/week_5_review.md) describe the aligned lab and validation. Its core uses three pages and one worked question; broader evaluation, a second model and keyword/hybrid retrieval follow as exercises and extensions. The earlier Python-agent notebook is retained separately and is not required for this week's lab.
+
+The Week 5 lab downloads public pages once, falls back to labelled course snapshots if a site is unavailable, and keeps snapshots, answers and traces under `local/student/2026-2027/week_5/`. Collection and retrieval run locally. Answer and review calls use `gemini-3.5-flash-lite` with a **Free Tier project key**, with billing left disabled. Quota errors mean waiting for a reset, not buying credits. The web-search comparison runs manually in the free Google AI Studio interface; the notebook makes no paid search-tool requests. The token-cost column is a reference estimate at paid rates, not a bill. Setup and account-access limitations are explained in the notebook; see [Google's pricing](https://ai.google.dev/gemini-api/docs/pricing) and [billing guidance](https://ai.google.dev/gemini-api/docs/billing).
 
 The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer and a comparison of lookup and contextual vectors. An optional NumPy exercise follows the self-attention calculation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
 
 Week 2 follows text through a tokenizer, model logits, softmax and a predicted label. Students then explore masked-token prediction and GPT-2 generation, measure batching on labelled reviews, and compare DistilBERT with BERT. Timing supports CPU, CUDA/ROCm and Apple MPS. Memory measurements cover the Python process and, on CUDA/ROCm devices, PyTorch tensor allocations; MPS GPU memory is not measured.
 
 Week 3 follows one churn-analysis task: check six rows by hand, validate API replies, generate and inspect Python, execute it, improve the plot, and reuse the checked code on 600 customers. Students compare sending all the data with generating code from six example rows. The final exercise asks them to add confidence intervals, test whether churn is associated with contract type, and write a supported conclusion. Students write their own prompts and implementation for that exercise.
+
+Week 4 retains the AMU intent-classification task and four methods: regex rules, sentence embeddings with logistic regression, a pretrained classifier and a prompted LLM. Students inspect development errors, use an LLM to propose a regex revision and generate ten synthetic debugging requests, then compare their final methods on a separate 20-request test set. Results include accuracy, prediction time and API tokens. Private outputs stay under `local/student/2026-2027/week_4/`.
 
 ## Rules of the game
 
@@ -53,7 +63,7 @@ jupyter lab labs
 
 Select this environment as the notebook's Python kernel. On Windows, replace the activation command with `.venv\Scripts\Activate.ps1` in PowerShell.
 
-For hosted calls, also run `python -m pip install -r requirements-live.txt` and set the relevant API key in a local `.env` file at the repository root; [.env.example](.env.example) lists the variable names. Week 3 needs `GEMINI_API_KEY` and uses the common course model `gemini-3.5-flash-lite`. Calls use account quota and may incur charges.
+For hosted calls, also run `python -m pip install -r requirements-live.txt` and set the relevant API key in a local `.env` file at the repository root; [.env.example](.env.example) lists the variable names. Weeks 3–4 need `GEMINI_API_KEY` and use the common course model `gemini-3.5-flash-lite`. Calls use account quota and may incur charges. Week 4 sends requests when its API cells run, without additional execution switches.
 
 ### Week 3 execution settings
 

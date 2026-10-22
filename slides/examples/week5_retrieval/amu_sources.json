@@ -1,0 +1,27 @@
+{
+  "verified_on": "2026-10-21",
+  "description": "Selected public pages for the planned Week 5 collection exercise. This is a source list, not a downloaded corpus.",
+  "sources": [
+    {
+      "id": "AMU-IUT",
+      "title": "Services de la scolarité",
+      "url": "https://iut.univ-amu.fr/fr/services-de-scolarite",
+      "scope": "IUT Aix-Marseille",
+      "topic": "Student card replacement"
+    },
+    {
+      "id": "AMU-WIFI",
+      "title": "Le réseau sans fil Wifi",
+      "url": "https://dirnum.univ-amu.fr/fr/reseau-fil-wifi",
+      "scope": "AMU digital services",
+      "topic": "University Wi-Fi access"
+    },
+    {
+      "id": "AMU-BU",
+      "title": "Emprunter/Réserver des documents",
+      "url": "https://bu.univ-amu.fr/fr/vos-services/emprunter-reserver-documents",
+      "scope": "AMU university library network; preserve exceptions in the page",
+      "topic": "Borrowing, renewal and reservations"
+    }
+  ]
+}
