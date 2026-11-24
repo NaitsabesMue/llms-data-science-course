@@ -2,8 +2,9 @@
 
 21 October 2026. The reviewed slides and revised `labs/week_5_rag.ipynb` follow
 the instructor's [teaching guidance](../skills/course-lecture-review/SKILL.md).
-The new notebook is ready for joint review. The previous Python-agent notebook
-is retained separately, outside the core Week 5 activity.
+The lab was frozen with the instructor on 24 November 2026 after the joint
+review and fixes below. The previous Python-agent notebook is retained
+separately, outside the core Week 5 activity.
 
 ## Main changes
 
@@ -49,8 +50,8 @@ Removed from the main lecture:
 | 7 | Show instructions, question and selected passages entering the same prompt. |
 | 8 | Keep the full student question as the search input; identify D2/D3 as the reference set and define precision/recall. |
 | 9 | Check an illustrative answer against D2/D3; the missing-price question has no supporting fact. |
-| 10 | Retrieve once, generate an answer, review it in a second call, and return feedback for revision. |
-| 11 | Walk through the answer--review loop, with at most four attempts (eight model calls) and explicit stopping statuses. |
+| 10 | Show three feedback paths: ask the student and wait for a reply if the question is ambiguous; retrieve more evidence if a fact is missing; revise the answer if the evidence is sufficient. Stop on acceptance, no new evidence or the attempt limit. |
+| 11 | Show the first implementation with a clear, fixed question and fixed passages, at most four attempts (eight model calls) and explicit stopping statuses. Section 4B of the notebook extends this code with clarification and further retrieval. |
 | 12 | Move from fictional documents to three linked official AMU sources, preserving institutional scope. |
 | 13 | Download HTML, extract text, split into passages and store embeddings with URLs and dates. |
 | 14 | Compare our RAG, RAG with review, and a model with web search; keep the model fixed first, then compare another. |
@@ -135,8 +136,8 @@ to validate any particular student's quota or access.
 
 ## Notebook structure and scope
 
-`labs/week_5_rag.ipynb` now contains 41 cells, including 20 code cells. The core
-uses one worked question and three real AMU pages; allow roughly 75–90 minutes
+`labs/week_5_rag.ipynb` now contains 49 cells, including 25 code cells. The core
+uses one worked question and three real AMU pages; allow roughly 90 minutes
 including source reading and inspection. The API sections execute when their
 cells are run, without additional flags or simulated fallback answers.
 
@@ -148,19 +149,25 @@ cells are run, without additional flags or simulated fallback answers.
    computing precision/recall. No reference labels are invented from rankings.
 3. **Answer:** compare full-document context and retrieved context with the same
    model and instructions. Show the actual prompt and use source IDs consistently.
-4. **Review:** display the two API functions and the complete answer--review loop.
-   Keep the question and passages fixed; send the previous answer and feedback
-   to the writer. Stop on accepted/missing-information or four attempts.
+4. **Review and act:** first show the fixed-passage loop from slide 11. Then
+   implement all three feedback arrows from slide 10: revise the answer, search
+   for missing facts, or ask the student. The extended loop appends the missing
+   fact to the full question and searches the top eight passages, adding only
+   unseen IDs. An actual student reply is appended to the original request and
+   followed by fresh retrieval and drafting. No facts or student replies are
+   fabricated. Both versions stop within four attempts (eight model calls).
 5. **Search online:** copy the printed prompt into a free AI Studio chat, enable
    Google Search, inspect the citations and save the answer locally. No paid
    search-tool request is sent by the notebook.
-6. **Compare:** show latest-run records for the three notebook workflows, every
+6. **Compare:** show latest-run records for the four notebook workflows, every
    model call, elapsed time, tokens (including thinking) and reference paid-rate
-   estimates. These estimates are not free-tier bills. Compare the browser answer
+   estimates. These estimates are not free-tier bills. Total elapsed time includes any student
+   wait, also shown separately. Compare the browser answer
    separately by quality and sources. Missing counts remain unknown.
-7. **Exercise:** use a new development question, freeze settings, and write three
+7. **Exercise:** use a new development question, freeze settings, and write four
    test questions with independently checked reference facts and sources. Include
-   a missing-information case. Students implement evaluation and conclusions.
+   an ambiguous question and a missing-information case; define truthful student
+   replies in advance and retain conversations when comparing workflows. Students implement evaluation and conclusions.
 
 Extensions keep a second-model comparison in free AI Studio and original BM25/hybrid
 retrievers. They are separate from the core run. The earlier code-execution
@@ -175,7 +182,7 @@ API setup reuses the repository `.env`, `gemini-3.5-flash-lite`, a two-minute
 timeout and one SDK attempt. Students select a Free Tier project in AI Studio
 and leave billing disabled. A paid project key can incur charges; the notebook
 cannot infer a billing plan from a key. No credentials are printed or embedded.
-The core requires 4–10 requests; exercises and reruns consume additional quota.
+The core requires 6–18 requests; exercises and reruns consume additional quota.
 Quota errors require waiting for the indicated reset, not paying to continue.
 The second browser model is `gemini-3.8-flash`, only where available for free.
 
@@ -186,8 +193,9 @@ The second browser model is `gemini-3.8-flash`, only where available for free.
   campus heading. Cached snapshots are checked before reuse.
 - Ran every non-installation code cell with actual downloaded HTML and the cached
   multilingual embedding model. The original question retrieved the relevant
-  lost-card passages. Used six explicitly mocked API replies to exercise the
-  three notebook workflows, including a revision. Checked that the browser-prompt
+  lost-card passages. Used twelve explicitly mocked API replies to exercise the
+  four notebook workflows, including revision, additional retrieval and a real
+  Python input callback supplied with a labelled test reply. Checked that the browser-prompt
   cells make no API calls, including the second-model extension.
 - No `.env` was read during validation and no hosted model request was sent.
   Mock outputs live only in the temporary validation directory; the shared
@@ -195,7 +203,7 @@ The second browser model is `gemini-3.8-flash`, only where available for free.
 - Added tests for extraction, cache integrity, failed downloads, source/ID
   preservation, retrieval metrics, unreported usage, search/thinking costs,
   latest-run accounting and notebook defaults. Existing loop tests cover feedback,
-  stopping and invalid reviews. `make check` passes all 59 tests and every notebook
+  stopping and invalid reviews. `make check` passes all 70 tests and every notebook
   passes syntax/format validation.
 
 ## Sources
@@ -225,3 +233,42 @@ The source URL and checksum are validated. The fallback and original failure are
 reported, retained in the local cache and shown in the document-origin table.
 Reusing that cache keeps the experiment stable; choosing a new directory retries
 live collection. Missing or damaged bundled files still raise an error.
+
+## Notebook alignment with the three feedback paths — 24 November 2026
+
+Section 4 now progresses from the fixed-passage implementation to a visible
+`answer_with_loop` function. The extended reviewer retains the same two JSON
+fields, `status` and `feedback`, adding `needs_clarification` as a fourth status.
+Feedback is a concrete correction, a missing fact for retrieval, or the actual
+clarifying question, according to the status. The original review validator
+still rejects clarification in the simple loop unless explicitly enabled.
+
+The loop stores the question, passage IDs, draft, review, further search and
+added IDs, plus actual student replies. `input()` waits for a real response;
+an empty reply returns `needs_clarification` without a final answer or more
+calls. Rerunning with a clarified question is a new recorded experiment.
+Clarification and retrieval do not reset the four-attempt budget. No extra
+retrieval or question is issued when no attempt remains. A search returning
+no unseen passages reports `no_new_evidence`; this is a limit of that search,
+not proof that the information is absent everywhere. Earlier evidence is retained
+when adding passages. A clarified question triggers fresh retrieval and drafting.
+
+The four-workflow comparison includes human waiting in total elapsed time and
+shows `student_wait_seconds` separately. Browser comparisons remain manual and
+make no paid search API calls. Free-tier access and the course-model reference
+rates were rechecked against Google's pricing on 24 November 2026. Account quotas
+were not tested with a live key. Offline tests cover evidence addition, no-new-
+evidence stopping, feedback propagation, real clarification, an empty reply,
+shared attempt limits and invalid review statuses.
+
+## Bring the browser result into the notebook
+
+Section 5 now has explicit fields for the actual AI Studio answer, source URLs,
+model, run date and optional manually measured time. A recording cell saves the
+answer under ignored `local/`, displays it and adds `Web agent (AI Studio)` to
+`results`. Empty fields are marked `not_recorded`; an answer without source URLs
+is `sources_missing`. The final table includes this browser row and displays all
+answers and the recorded browser sources for quality comparison. Its `access`
+column distinguishes API and browser runs. Browser API calls, tokens and costs
+remain unknown, rather than being counted as zero. No paid search call or
+fabricated browser answer has been added.

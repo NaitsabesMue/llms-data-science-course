@@ -2,7 +2,9 @@
 
 **2026–2027 · 21 hours · English · Aix-Marseille Université**
 
-LLMs can carry out many routine tasks assigned to a junior data scientist: write code, prepare data, produce plots, and draft an analysis. This course teaches you to use that work to improve your performance, and to check whether it actually helps. We start with tokens, embeddings, and self-attention, then use pretrained models and APIs. We finish by turning generated Python into a bounded agent loop: execute, inspect, and revise.
+**Hackathon: Friday 4 December 2026, 09:00–17:00. Presentations start at 16:00. Commit your project by 16:00, before presentations, and email it to [sebastian.muller@univ-amu.fr](mailto:sebastian.muller@univ-amu.fr) by 17:00 that day.** See the [assessment and submission instructions](#final-evaluation-hackathon).
+
+LLMs can carry out many routine tasks assigned to a junior data scientist: write code, prepare data, produce plots, and draft an analysis. This course teaches you to use that work to improve your performance, and to check whether it actually helps. We start with tokens, embeddings, and self-attention, then use pretrained models and APIs. We build bounded agent loops that execute code, retrieve evidence, review results and revise the work.
 
 For final-year data science students with a strong mathematics background and working knowledge of Python, statistics, and machine learning.
 
@@ -12,13 +14,13 @@ For final-year data science students with a strong mathematics background and wo
 - Use pretrained models through Hugging Face and hosted APIs.
 - Write clear prompts, parse outputs, and check generated analyses.
 - Compare rules, classical ML, model prompting, and retrieval on quality and latency.
-- Build a small agent that uses execution feedback; measure quality, total time, and cost against a baseline.
+- Build an agent loop with tools, feedback and independent checks; measure quality, total time and cost against a baseline.
 
 ## Structure and materials
 
-Approximately 7 hours of lectures, 7 hours of labs, and a 7-hour hackathon. The six teaching blocks retain last year's order; adjust lecture/lab pacing to fit the timetable.
+Approximately 7 hours of lectures and 7 hours of labs, followed by the final hackathon day.
 
-Weeks 1–4 have been revised for the current course. Week 5's slides and new lab are aligned and ready for joint notebook review. Week 6 remains in the outline.
+Weeks 1–5 are revised. The Week 5 lab is frozen as of 24 November 2026. The Week 6 briefing and project template are ready for the hackathon on 4 December.
 
 | Week | Topic | Slides | Lab |
 |---|---|---|---|
@@ -27,6 +29,7 @@ Weeks 1–4 have been revised for the current course. Week 5's slides and new la
 | 3 | From a task to a verified analysis — API calls, generated Python and feedback | [PDF](slides/week_3_effective_llm_use.pdf) · [source](slides/week_3_effective_llm_use.tex) | [Generate, execute and check an analysis](labs/week_3_effective_llm_use.ipynb) |
 | 4 | Text classification — four methods, evaluation and improvement | [PDF](slides/week_4_classification.pdf) · [source](slides/week_4_classification.tex) | [Compare and improve classifiers](labs/week_4_classification.ipynb) |
 | 5 | AMU assistant — collect webpages, retrieve evidence, review answers and compare web search | [PDF](slides/week_5_rag.pdf) · [source](slides/week_5_rag.tex) | [Build and evaluate an AMU assistant](labs/week_5_rag.ipynb) |
+| 6 | Hackathon — build, evaluate and present a working product | [PDF](slides/week_6_hackathon.pdf) · [source](slides/week_6_hackathon.tex) | [Project template](labs/week_6_hackathon_template.ipynb) |
 
 The original illustrated introduction remains the foundation. RAG remains in the course, with a comparison against supplying the full document set. Detailed retrieval experiments are optional if more time is needed for the final agent loop.
 
@@ -34,9 +37,9 @@ See the [lecture outline](LLM_for_Science_outline.md), [recent lecture videos an
 
 The [Week 4 revision notes](docs/week_4_review.md) describe the aligned slides and notebook. The [course editing skill](skills/course-lecture-review/SKILL.md) records the teaching standards established during the joint revisions.
 
-Week 5 follows student questions from document context to an answer–review loop, then builds RAG from official AMU webpages and compares it with web search. The [revision notes](docs/week_5_review.md) describe the aligned lab and validation. Its core uses three pages and one worked question; broader evaluation, a second model and keyword/hybrid retrieval follow as exercises and extensions. The earlier Python-agent notebook is retained separately and is not required for this week's lab.
+Week 5 follows student questions from document context to an answer–review loop, then builds RAG from official AMU webpages and compares it with web search. The [revision notes](docs/week_5_review.md) describe the aligned lab and validation. Its core uses three pages and one worked question. The notebook starts with fixed-passage review, then adds further retrieval and student clarification, with at most four answer–review attempts per loop. Broader evaluation, a second model and keyword/hybrid retrieval follow as exercises and extensions. The earlier Python-agent notebook is retained separately and is not required for this week's lab.
 
-The Week 5 lab downloads public pages once, falls back to labelled course snapshots if a site is unavailable, and keeps snapshots, answers and traces under `local/student/2026-2027/week_5/`. Collection and retrieval run locally. Answer and review calls use `gemini-3.5-flash-lite` with a **Free Tier project key**, with billing left disabled. Quota errors mean waiting for a reset, not buying credits. The web-search comparison runs manually in the free Google AI Studio interface; the notebook makes no paid search-tool requests. The token-cost column is a reference estimate at paid rates, not a bill. Setup and account-access limitations are explained in the notebook; see [Google's pricing](https://ai.google.dev/gemini-api/docs/pricing) and [billing guidance](https://ai.google.dev/gemini-api/docs/billing).
+The Week 5 lab downloads public pages once, falls back to labelled course snapshots if a site is unavailable, and keeps snapshots, answers and traces under `local/student/2026-2027/week_5/`. Collection and retrieval run locally. Answer and review calls use `gemini-3.5-flash-lite` with a **Free Tier project key**, with billing left disabled. Quota errors mean waiting for a reset, not buying credits. The web-search comparison runs manually in the free Google AI Studio interface. Section 5 records the actual browser answer and cited URLs; the final table and answer display include that result, with unknown API usage left missing. The notebook makes no paid search-tool requests. The token-cost column is a reference estimate at paid rates, not a bill. The four notebook workflows use 6–18 requests for the core demonstration. If clarification is needed, the notebook waits for the student's actual reply and records that waiting time separately. Setup and account-access limitations are explained in the notebook; see [Google's pricing](https://ai.google.dev/gemini-api/docs/pricing) and [billing guidance](https://ai.google.dev/gemini-api/docs/billing).
 
 The Week 1 notebook retains the original whitespace, bag-of-words, news-tokenization, and MiniLM exercises. It adds the Qwen3.5 tokenizer and a comparison of lookup and contextual vectors. An optional NumPy exercise follows the self-attention calculation. Core exercises need public downloads on their first run; hosted generation and the larger embedding comparison are disabled by default. Save student reports and tables under `local/student/2026-2027/week_1/`.
 
@@ -91,6 +94,8 @@ Local execution has the notebook's file permissions and is not a sandbox. Docker
 
 ## Final evaluation: hackathon
 
+**Friday 4 December 2026, 09:00–17:00, with presentations starting at 16:00 (local time in France).** Teams organise their own work and breaks. The working plan in the project template is a recommendation; the start, presentation time, commit deadline and email deadline are fixed.
+
 Teams of 1–5 students spend one day building a working product that uses an agent loop to complete a concrete task. A small application, dashboard, or service is enough if a user can run it and obtain a useful result. A local demo is sufficient; public deployment is optional.
 
 Show the product working, a trace of tool calls and observations, a failure followed by a revision, and the check that decides when the task is complete. Explain which course concepts you used and why. The grading scheme remains four criteria worth 5 points each:
@@ -104,9 +109,13 @@ Show the product working, a trace of tool calls and observations, a failure foll
 
 Compare with a simple baseline on the same tasks. Report quality, total time including review and repair, and API usage/cost. Keep the loop as simple as the task allows. Presentations remain 5–7 minutes; the score out of 20 is the course grade.
 
+**Commit deadline: 16:00 on 4 December 2026, before presentations.** Commit the version you will demonstrate in your project's own Git repository. **Email deadline: 17:00 that day**, to [sebastian.muller@univ-amu.fr](mailto:sebastian.muller@univ-amu.fr). Send an accessible repository link with the full commit hash, or an archive exported from that commit. Include team members, installation/run instructions, evaluation results, the loop trace and presentation. The [project template](labs/week_6_hackathon_template.ipynb) includes the schedule and export instructions.
+
+Projects stored under this course's ignored `local/` folder need their own Git repository; committing the course repository does not include those files. Public publication is optional.
+
 ## Shared and private materials
 
-Slides, reusable labs, and public/synthetic datasets stay in Git. Private submissions and student work go in `local/student/2026-2027/`; grades, solutions, and instructor notes go in `local/instructor/2026-2027/`. Run traces go in `local/runs/`. The whole `local/` directory is ignored; create these directories on a fresh clone. Submit private projects through the university teaching platform.
+Slides, reusable labs, and public/synthetic datasets stay in Git. Private submissions and student work go in `local/student/2026-2027/`; grades, solutions, and instructor notes go in `local/instructor/2026-2027/`. Run traces go in `local/runs/`. The whole `local/` directory is ignored; create these directories on a fresh clone. Deliver hackathon projects to the instructor as specified above.
 
 `main` is the current course. The branch `archive/2025-2026` preserves the previous slides and labs, including the notebook edits present before this revision.
 

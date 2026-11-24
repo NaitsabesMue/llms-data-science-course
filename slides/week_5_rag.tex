@@ -171,27 +171,33 @@
 \section{Review and Improve the Answer}
 
 \begin{frame}{Generate an Answer, Review It, Then Revise}
-  \small A second LLM call checks whether the answer addresses the question and is supported by the documents. Both calls receive the original question and the retrieved passages.
+  \small The reviewer checks the answer, its sources and whether the question is clear enough to answer. Both LLM calls receive the question and retrieved passages.
   \begin{center}
   \begin{tikzpicture}
     \node[rag/query,text width=1.9cm] (question) at (0,0) {Student's\\question};
     \node[rag/store,text width=2.2cm] (search) at (2.9,0) {Retrieve\\documents};
     \node[rag/llm,text width=2.4cm] (writer) at (6.2,0) {LLM call 1\\Write an answer};
     \node[rag/llm,text width=2.4cm] (reviewer) at (9.8,0) {LLM call 2\\Review the answer};
-    \node[rag/context,text width=2.8cm] (stop) at (9.8,-2.7) {Stop: accepted or\\information missing};
+    \node[rag/context,text width=3.0cm] (stop) at (9.8,-2.2) {\mbox{Stop: accepted,}\\no new evidence,\\or attempt limit};
     \draw[rag/arrow] (question) -- (search);
     \draw[rag/arrow] (search) -- (writer);
     \draw[rag/arrow] (writer) -- (reviewer);
+    \draw[rag/arrow,draw=AMU_acc6] (reviewer.north east) -- (11.2,1.85) -- (0,1.85) -- (question.north);
+    \node[font=\small,align=center,text=AMU_acc6] at (5.6,2.25)
+      {Question unclear: ask the student and wait for a reply};
+    \draw[rag/arrow] (reviewer.north) -- (9.8,1.05) -- (2.9,1.05) -- (search.north);
+    \node[font=\small,align=center] at (6.35,1.45)
+      {Information missing: search for the missing fact};
     \draw[rag/arrow] (reviewer.south west) -- (8.1,-1.4) -- (6.2,-1.4) -- (writer.south);
-    \node[font=\small,align=center] at (7.0,-1.95) {Needs revision:\\send feedback};
+    \node[font=\small,align=center] at (6.2,-1.95) {Evidence sufficient:\\revise using feedback};
     \draw[rag/arrow] (reviewer) -- (stop);
   \end{tikzpicture}
   \end{center}
-  \note{This is a fixed answer--review workflow, replacing the earlier model-selected search example. The writer and reviewer can use the same model in separate API calls. Retrieve once using the full original question, then keep the passages fixed while revising the answer. The reviewer checks coverage, factual support and citations. Missing information means the supplied passages are insufficient; it does not prove the information is absent from the entire collection. Stop and report that limitation rather than invent an answer. At most four answer--review attempts are allowed. A review acceptance is a model judgment, not an independent guarantee; evaluate the workflow against the reference answers and sources.}
+  \note{Distinguish three cases. If the question is ambiguous, ask the student a specific clarification and pause for their reply: for example, ``Où récupérer ma carte ?'' may require ``Dans quelle composante ou sur quel campus ?''. Keep the original request and append the student's clarification before retrieving again; the model must not invent the student's answer. If ambiguity is apparent at the start, ask before retrieval rather than waiting for review. If the question is clear but a supporting fact is missing, change the search query or retrieve additional passages. Repeating an identical search returns the same evidence. If the passages already contain the needed facts, send correction feedback to the writer. More retrieval cannot create facts absent from the collection: stop when no new relevant evidence is found or the attempt limit is reached and state what remains unknown. The next slide shows the simpler fixed-question, fixed-passage version. Section 4A of the lab implements it; Section 4B extends it with further retrieval and actual student replies, under the same four-attempt budget. Review acceptance remains a model judgment, checked independently against sources.}
 \end{frame}
 
-\begin{frame}[fragile]{The Answer--Review Loop in Python}
-  \small Each attempt makes two LLM calls: \texttt{write\_answer} drafts or revises the answer; \texttt{review\_answer} checks it against the question and passages.
+\begin{frame}[fragile]{First Implementation: Keep the Passages Fixed}
+  \small Start with a clear question and retrieve once, then write and review the answer. This first version stops if information is missing; it does not yet search again.
   \par\vspace{0.4em}
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.63\linewidth}

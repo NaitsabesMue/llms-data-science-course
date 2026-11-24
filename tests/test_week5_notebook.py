@@ -147,6 +147,32 @@ class Week5NotebookTests(unittest.TestCase):
             self.assertEqual(table.iloc[0]['model_calls'], 1)
             self.assertEqual(len(log), 2)
 
+    def test_browser_result_is_displayed_saved_and_has_unknown_api_usage(self):
+        notebook = json.loads((ROOT / 'labs/week_5_rag.ipynb').read_text())
+        code = next(''.join(c['source']) for c in notebook['cells']
+                    if c['cell_type'] == 'code' and ''.join(c['source']).startswith('web_result ='))
+        for answer, sources, status in [
+            ('', [], 'not_recorded'),
+            ('TEST browser answer', [], 'sources_missing'),
+            ('TEST browser answer', ['https://example.org/amu'], 'recorded'),
+        ]:
+            with self.subTest(status=status), TemporaryDirectory() as folder:
+                namespace = dict(web_answer=answer, web_sources=sources, web_model='test-model',
+                                 web_run_date='2026-11-24', web_seconds=None, question='TEST question',
+                                 web_prompt='TEST prompt', work=Path(folder), json=json,
+                                 pd=h.pd, display=Mock(), Markdown=lambda text: text, results={})
+                exec(compile(code, 'browser recording cell', 'exec'), namespace)
+                result = namespace['results']['Web agent (AI Studio)']
+                self.assertEqual(result['status'], status)
+                self.assertEqual(result['sources'], sources)
+                saved = json.loads((Path(folder) / 'web_agent_result.json').read_text())
+                self.assertEqual(saved, result)
+                table = h.comparison_table(namespace['results'])
+                self.assertEqual(table.iloc[0]['access'], 'AI Studio (manual)')
+                for field in ('seconds', 'model_calls', 'input_tokens', 'total_tokens',
+                              'cost_estimate_usd'):
+                    self.assertTrue(h.pd.isna(table.iloc[0][field]))
+
     def test_notebook_has_no_paid_search_calls_and_keeps_same_question(self):
         nb = json.loads((ROOT / 'labs/week_5_rag.ipynb').read_text())
         code = '\n'.join(''.join(c['source']) for c in nb['cells'] if c['cell_type'] == 'code')

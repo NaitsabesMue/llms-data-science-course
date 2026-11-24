@@ -194,7 +194,8 @@ def run_experiment(name, task, log, results, work):
     target.mkdir(parents=True, exist_ok=True)
     (target / f"{result['run_id']}.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
     print(name, '|', result['status'])
-    print(result.get('answer') or result.get('error') or 'No answer returned.')
+    print(result.get('clarification_question') or result.get('answer')
+          or result.get('error') or 'No answer returned.')
     return result
 
 
@@ -202,11 +203,13 @@ def comparison_table(results):
     rows = []
     for name, result in results.items():
         calls = result['calls']
-        row = {'workflow': name, 'status': result['status'], 'seconds': result['elapsed_s'],
-               'model_calls': len(calls)}
+        row = {'workflow': name, 'access': result.get('access', 'API'),
+               'status': result['status'], 'seconds': result['elapsed_s'],
+               'student_wait_seconds': result.get('student_wait_seconds', 0.0),
+               'model_calls': len(calls) if calls is not None else None}
         for field in ('input_tokens', 'output_tokens', 'thinking_tokens', 'total_tokens',
                       'reported_search_queries', 'cost_estimate_usd'):
-            values = [c[field] for c in calls]
+            values = [c[field] for c in calls] if calls is not None else []
             row[field] = sum(values) if values and all(v is not None for v in values) else None
         rows.append(row)
     return pd.DataFrame(rows)

@@ -49,10 +49,13 @@ def write_answer(client, model_name, question, passages, previous_answer, feedba
     return response.text
 
 
-def check_review(review):
+def check_review(review, allow_clarification=False):
     if not isinstance(review, dict) or set(review) != {'status', 'feedback'}:
         raise ValueError('A review must contain status and feedback.')
-    if review['status'] not in ('accepted', 'revise', 'missing_information'):
+    statuses = ('accepted', 'revise', 'missing_information')
+    if allow_clarification:
+        statuses += ('needs_clarification',)
+    if review['status'] not in statuses:
         raise ValueError('Unknown review status.')
     if not isinstance(review['feedback'], str) or not review['feedback'].strip():
         raise ValueError('A review must explain its decision in feedback.')
